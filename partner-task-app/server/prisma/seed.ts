@@ -132,14 +132,18 @@ async function main() {
   console.log('✅ 示例任务创建成功');
 
   // 9. 创建敏感词示例
-  await prisma.sensitiveWord.createMany({
-    data: [
-      { word: '暴力', category: 'violence', level: 2 },
-      { word: '赌博', category: 'gambling', level: 2 },
-      { word: '毒品', category: 'drugs', level: 3 },
-    ],
-    skipDuplicates: true,
-  });
+  const sensitiveWords = [
+    { word: '暴力', category: 'violence', level: 2 },
+    { word: '赌博', category: 'gambling', level: 2 },
+    { word: '毒品', category: 'drugs', level: 3 },
+  ];
+  for (const word of sensitiveWords) {
+    await prisma.sensitiveWord.upsert({
+      where: { word: word.word },
+      update: {},
+      create: word,
+    });
+  }
   console.log('✅ 敏感词创建成功');
 
   console.log('\n🎉 数据库初始化完成！');
