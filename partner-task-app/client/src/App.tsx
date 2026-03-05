@@ -20,9 +20,11 @@ import GuideCheckins from './pages/guide/Checkins';
 // Grower Pages
 import GrowerDashboard from './pages/grower/Dashboard';
 import GrowerTasks from './pages/grower/Tasks';
-import Cottage from './pages/cottage/Cottage';
+import Cottage from './pages/cottage/CottageView';
 import Shop from './pages/cottage/Shop';
 import Rewards from './pages/grower/Rewards';
+import Collections from './pages/cottage/Collections';
+import Ranking from './pages/cottage/Ranking';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -83,6 +85,8 @@ function App() {
           <Route path="dashboard" element={<GrowerDashboard />} />
           <Route path="tasks" element={<GrowerTasks />} />
           <Route path="cottage" element={<Cottage />} />
+          <Route path="cottage/ranking" element={<Ranking />} />
+          <Route path="collections" element={<Collections />} />
           <Route path="shop" element={<Shop />} />
           <Route path="rewards" element={<Rewards />} />
         </Route>

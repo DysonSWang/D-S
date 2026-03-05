@@ -6,6 +6,7 @@ import {
   HomeOutlined,
   ShopOutlined,
   TrophyOutlined,
+  BookOutlined,
   UserOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
@@ -32,6 +33,11 @@ const GrowerLayout = () => {
       key: '/grower/cottage',
       icon: <HomeOutlined />,
       label: '我的小屋',
+    },
+    {
+      key: '/grower/collections',
+      icon: <BookOutlined />,
+      label: '装饰图鉴',
     },
     {
       key: '/grower/shop',

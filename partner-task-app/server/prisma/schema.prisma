@@ -42,6 +42,7 @@ model User {
   notifications        Notification[]
   messageSender        Message[]      @relation("MessageSender")
   messageReceiver      Message[]      @relation("MessageReceiver")
+  collectionProgress   UserCollectionProgress[]
 
   @@index([username])
   @@index([email])
@@ -173,6 +174,23 @@ model RewardTransaction {
 
 // ==================== 装饰系统 ====================
 
+/// 装饰系列表 (图鉴分类)
+model DecorationCollection {
+  id          Int      @id @default(autoincrement())
+  name        String   // "温馨家具系列" "春日限定系列"
+  description String?
+  iconUrl     String?
+  totalItems  Int      // 系列总物品数
+  bonusReward String?  // JSON: {bones, fish, gems} 收集奖励
+  isHidden    Boolean  @default(false)  // 是否隐藏 (收集部分后显示)
+  createdAt   DateTime @default(now())
+
+  decorations Decoration[]
+  userProgress UserCollectionProgress[]
+
+  @@index([name])
+}
+
 /// 装饰物品表
 model Decoration {
   id          Int      @id @default(autoincrement())
@@ -185,13 +203,19 @@ model Decoration {
   imageUrl    String?
   description String?
   isAvailable Boolean  @default(true)
+  collectionId Int?    // 所属系列 ID (图鉴)
+  slotType    String   @default("FURNITURE") // 槽位类型 (FURNITURE/WALL/FLOOR/PLANT/EFFECT)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // 所属系列
+  collection  DecorationCollection? @relation(fields: [collectionId], references: [id])
   // 用户拥有的装饰
   userDecorations UserDecoration[]
 
   @@index([category])
+  @@index([collectionId])
+  @@index([slotType])
 }
 
 /// 用户装饰物品表
@@ -203,12 +227,14 @@ model UserDecoration {
   decoration   Decoration @relation(fields: [decorationId], references: [id])
   quantity     Int      @default(1)
   isEquipped   Boolean  @default(false)
-  position     String?  // JSON {x, y, rotation}
+  slotPosition Int?     // 槽位位置 (1-maxSlots)
+  position     String?  // JSON {x, y, rotation} - 预留自由摆放
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([userId, decorationId])
   @@index([userId])
+  @@index([isEquipped])
 }
 
 // ==================== 小屋系统 ====================
@@ -223,10 +249,31 @@ model Cottage {
   warmth        Int      @default(0)
   theme         String?
   backgroundUrl String?
+  maxSlots      Int      @default(5)    // 装饰槽位上限 (随等级解锁)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([growerId])
+}
+
+// ==================== 图鉴收集系统 ====================
+
+/// 用户收集进度表 (图鉴)
+model UserCollectionProgress {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  collectionId Int
+  collection   DecorationCollection @relation(fields: [collectionId], references: [id])
+  collectedCount Int    @default(0)  // 已收集数量
+  isCompleted  Boolean  @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, collectionId])
+  @@index([userId])
+  @@index([isCompleted])
 }
 
 // ==================== 成就系统 ====================

@@ -85,35 +85,76 @@ async function main() {
       level: 1,
       experience: 0,
       warmth: 0,
+      maxSlots: 5,
     },
   });
   console.log('✅ 小屋创建成功');
 
-  // 7. 创建装饰物品（更多物品）
-  const decorations = [
-    { name: '木质桌子', category: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 50, warmthBonus: 5 },
-    { name: '绿色植物', category: 'PLANT', rarity: 1, priceType: 'BONES', price: 30, warmthBonus: 3 },
-    { name: '温馨地毯', category: 'FURNITURE', rarity: 2, priceType: 'FISH', price: 5, warmthBonus: 8 },
-    { name: '水晶吊灯', category: 'FURNITURE', rarity: 3, priceType: 'GEMS', price: 10, warmthBonus: 15 },
-    { name: '可爱宠物', category: 'PET', rarity: 2, priceType: 'FISH', price: 8, warmthBonus: 10 },
-    { name: '舒适沙发', category: 'FURNITURE', rarity: 2, priceType: 'BONES', price: 80, warmthBonus: 12 },
-    { name: '艺术挂画', category: 'WALL', rarity: 1, priceType: 'BONES', price: 40, warmthBonus: 4 },
-    { name: '落地窗', category: 'HOUSE', rarity: 3, priceType: 'GEMS', price: 15, warmthBonus: 20 },
-    { name: '小台灯', category: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 25, warmthBonus: 3 },
-    { name: '书架', category: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 60, warmthBonus: 6 },
-    { name: '鲜花瓶', category: 'PLANT', rarity: 1, priceType: 'BONES', price: 20, warmthBonus: 2 },
-    { name: '毛绒玩具', category: 'PET', rarity: 1, priceType: 'BONES', price: 35, warmthBonus: 4 },
-    { name: '星空壁纸', category: 'WALL', rarity: 3, priceType: 'GEMS', price: 12, warmthBonus: 18 },
-    { name: '音乐盒', category: 'EFFECT', rarity: 2, priceType: 'FISH', price: 6, warmthBonus: 9 },
-    { name: '喷泉雕塑', category: 'EFFECT', rarity: 4, priceType: 'GEMS', price: 20, warmthBonus: 25 },
+  // 7. 创建装饰系列 (图鉴)
+  const collections = [
+    {
+      name: '温馨家具系列',
+      description: '打造舒适温馨的小屋',
+      totalItems: 6,
+      bonusReward: JSON.stringify({ bones: 100, fish: 10 }),
+    },
+    {
+      name: '春日限定系列',
+      description: '春天的气息，限定收藏',
+      totalItems: 4,
+      bonusReward: JSON.stringify({ fish: 20, gems: 5 }),
+    },
+    {
+      name: '梦幻特效系列',
+      description: '让小屋充满魔法',
+      totalItems: 3,
+      bonusReward: JSON.stringify({ gems: 10 }),
+    },
   ];
 
-  for (const dec of decorations) {
+  const createdCollections: any[] = [];
+  for (const col of collections) {
+    const created = await prisma.decorationCollection.create({
+      data: col,
+    });
+    createdCollections.push(created);
+  }
+  console.log('✅ 装饰系列创建成功');
+
+  // 8. 创建装饰物品（按系列分类）
+  const decorationsWithCollection = [
+    // 温馨家具系列
+    { name: '木质桌子', category: 'FURNITURE', slotType: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 50, warmthBonus: 5, collectionId: 1 },
+    { name: '舒适沙发', category: 'FURNITURE', slotType: 'FURNITURE', rarity: 2, priceType: 'BONES', price: 80, warmthBonus: 12, collectionId: 1 },
+    { name: '小台灯', category: 'FURNITURE', slotType: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 25, warmthBonus: 3, collectionId: 1 },
+    { name: '书架', category: 'FURNITURE', slotType: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 60, warmthBonus: 6, collectionId: 1 },
+    { name: '温馨地毯', category: 'FURNITURE', slotType: 'FLOOR', rarity: 2, priceType: 'FISH', price: 5, warmthBonus: 8, collectionId: 1 },
+    { name: '艺术挂画', category: 'WALL', slotType: 'WALL', rarity: 1, priceType: 'BONES', price: 40, warmthBonus: 4, collectionId: 1 },
+    
+    // 春日限定系列
+    { name: '绿色植物', category: 'PLANT', slotType: 'PLANT', rarity: 1, priceType: 'BONES', price: 30, warmthBonus: 3, collectionId: 2 },
+    { name: '鲜花瓶', category: 'PLANT', slotType: 'PLANT', rarity: 1, priceType: 'BONES', price: 20, warmthBonus: 2, collectionId: 2 },
+    { name: '樱花盆栽', category: 'PLANT', slotType: 'PLANT', rarity: 2, priceType: 'FISH', price: 8, warmthBonus: 10, collectionId: 2 },
+    { name: '春天地毯', category: 'FURNITURE', slotType: 'FLOOR', rarity: 2, priceType: 'FISH', price: 6, warmthBonus: 8, collectionId: 2 },
+    
+    // 梦幻特效系列
+    { name: '音乐盒', category: 'EFFECT', slotType: 'EFFECT', rarity: 2, priceType: 'FISH', price: 6, warmthBonus: 9, collectionId: 3 },
+    { name: '水晶吊灯', category: 'FURNITURE', slotType: 'FURNITURE', rarity: 3, priceType: 'GEMS', price: 10, warmthBonus: 15, collectionId: 3 },
+    { name: '星空壁纸', category: 'WALL', slotType: 'WALL', rarity: 3, priceType: 'GEMS', price: 12, warmthBonus: 18, collectionId: 3 },
+    
+    // 其他装饰
+    { name: '可爱宠物', category: 'PET', slotType: 'EFFECT', rarity: 2, priceType: 'FISH', price: 8, warmthBonus: 10, collectionId: null },
+    { name: '落地窗', category: 'HOUSE', slotType: 'WALL', rarity: 3, priceType: 'GEMS', price: 15, warmthBonus: 20, collectionId: null },
+    { name: '毛绒玩具', category: 'PET', slotType: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 35, warmthBonus: 4, collectionId: null },
+    { name: '喷泉雕塑', category: 'EFFECT', slotType: 'EFFECT', rarity: 4, priceType: 'GEMS', price: 20, warmthBonus: 25, collectionId: null },
+  ];
+
+  for (const dec of decorationsWithCollection) {
     await prisma.decoration.create({
       data: dec,
     });
   }
-  console.log('✅ 装饰物品创建成功');
+  console.log('✅ 装饰物品创建成功 (17 件)');
 
   // 8. 创建任务
   await prisma.task.create({

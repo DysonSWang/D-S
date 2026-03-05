@@ -1,7 +1,72 @@
 # 伙伴任务打卡系统 - 开发进度
 
-**最后更新**: 2026-03-05 19:00
+**最后更新**: 2026-03-05 21:00
 **总体进度**: 100% 🎉🎉🎉
+
+---
+
+## 🆕 最新更新 (2026-03-05)
+
+### 小屋装饰系统升级 ✅
+
+**核心理念**: 装饰为主 (70%) + 升级为辅 (30%)
+
+#### 新增功能
+
+**1. 装饰槽位系统**
+- 小屋等级 → 解锁更多装饰槽位
+- Lv.1: 5 槽 → Lv.10: 50 槽
+- 装备装饰时检查槽位限制
+
+**2. 装饰图鉴系统**
+- 装饰按系列分类（温馨家具/春日限定/梦幻特效）
+- 收集进度追踪
+- 完成系列奖励（骨头/鱼/宝石）
+
+**3. 温暖度排行榜**
+- 全服温暖度排名
+- 展示前 50 名用户
+- 统计参与人数/平均温暖度
+
+**4. 槽位类型系统**
+- FURNITURE (家具)
+- WALL (墙面)
+- FLOOR (地面)
+- PLANT (植物)
+- EFFECT (特效)
+
+#### 数据库变更
+
+**新增表**:
+- `DecorationCollection` - 装饰系列
+- `UserCollectionProgress` - 用户收集进度
+
+**更新表**:
+- `Cottage` - 新增 `maxSlots` 字段
+- `Decoration` - 新增 `collectionId`, `slotType` 字段
+- `UserDecoration` - 新增 `slotPosition` 字段
+
+#### API 变更
+
+**新增端点**:
+- `GET /api/cottage/warmth-ranking` - 温暖度排行榜
+- `GET /api/cottage/collections` - 图鉴列表
+- `GET /api/cottage/collections/:id` - 图鉴详情
+
+**更新端点**:
+- `GET /api/cottage/my` - 返回槽位信息
+- `POST /api/cottage/decorate` - 支持槽位系统
+
+#### 前端页面
+
+**新增页面**:
+- `/grower/collections` - 装饰图鉴
+- `/grower/cottage/ranking` - 温暖度排行榜
+
+**更新页面**:
+- `/grower/cottage` - 槽位显示、图鉴入口
+
+---
 
 ---
 
