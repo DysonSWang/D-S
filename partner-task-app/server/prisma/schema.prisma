@@ -1,0 +1,399 @@
+// Partner Task App - Prisma Schema
+// 伙伴任务打卡系统 - 数据库模型
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ==================== 用户系统 ====================
+
+/// 用户表
+model User {
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  passwordHash    String
+  role            Role     @default(GROWER)
+  nickname        String?
+  avatarUrl       String?
+  email           String?  @unique
+  phone           String?
+  timezone        String   @default("Asia/Shanghai")
+  status          Int      @default(1) // 0 禁用 1 正常
+  safetyWordYellow String?
+  safetyWordRed   String?
+  ageVerified     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 关系
+  guideRelationships   Relationship[] @relation("GuideRelationships")
+  growerRelationships  Relationship[] @relation("GrowerRelationships")
+  tasks                Task[]
+  rewards              Reward?
+  cottage              Cottage?
+  decorations          UserDecoration[]
+  achievements         UserAchievement[]
+  notifications        Notification[]
+  messages             Message[]
+
+  @@index([username])
+  @@index([email])
+  @@index([role])
+}
+
+enum Role {
+  ADMIN
+  GUIDE
+  GROWER
+}
+
+// ==================== 关系系统 ====================
+
+/// 伙伴关系表
+model Relationship {
+  id                  Int      @id @default(autoincrement())
+  guideId             Int
+  guide               User     @relation("GuideRelationships", fields: [guideId], references: [id])
+  growerId            Int
+  grower              User     @relation("GrowerRelationships", fields: [growerId], references: [id])
+  mode                RelationMode @default(PARTNER)
+  status              RelationStatus @default(PENDING)
+  startDate           DateTime?
+  endDate             DateTime?
+  agreementContent    String?
+  guideSign           String?
+  growerSign          String?
+  coolingOffDeadline  DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // 关系中的任务
+  tasks               Task[]
+
+  @@unique([guideId, growerId])
+  @@index([guideId])
+  @@index([growerId])
+  @@index([status])
+}
+
+enum RelationMode {
+  PARTNER      // 成长伙伴模式（平等）
+  GUIDE_GROWER // 引导成长模式
+}
+
+enum RelationStatus {
+  PENDING    // 待确认
+  ACTIVE     // 有效
+  DISSOLVING // 解除中（冷静期）
+  DISSOLVED  // 已解除
+}
+
+// ==================== 任务系统 ====================
+
+/// 任务表
+model Task {
+  id              Int      @id @default(autoincrement())
+  relationshipId  Int
+  relationship    Relationship @relation(fields: [relationshipId], references: [id])
+  guideId         Int
+  guide           User     @relation(fields: [guideId], references: [id])
+  growerId        Int
+  grower          User     @relation(fields: [growerId], references: [id])
+  templateId      Int?
+  type            String?
+  name            String
+  description     String?
+  difficulty      Int      @default(1) // 1-5
+  status          TaskStatus @default(PENDING)
+  proofType       ProofType @default(TEXT)
+  proofContent    String?
+  rewardConfig    String?  // JSON
+  suggestionConfig String?
+  deadline        DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  auditedAt       DateTime?
+  auditedBy       Int?
+  auditComment    String?
+  repeatType      RepeatType @default(NONE)
+  repeatConfig    String?  // JSON
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([guideId])
+  @@index([growerId])
+  @@index([status])
+  @@index([relationshipId])
+}
+
+enum TaskStatus {
+  PENDING     // 待开始
+  IN_PROGRESS // 进行中
+  PENDING_REVIEW // 待审核
+  COMPLETED   // 已完成
+  FAILED      // 已失败
+  ARCHIVED    // 已归档
+}
+
+enum ProofType {
+  TEXT
+  IMAGE
+  VIDEO
+  NONE
+}
+
+enum RepeatType {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+// ==================== 任务模板 ====================
+
+/// 任务模板表
+model TaskTemplate {
+  id          Int      @id @default(autoincrement())
+  creatorId   Int
+  name        String
+  description String?
+  difficulty  Int      @default(1)
+  category    String?
+  tags        String?  // JSON array
+  isPublic    Boolean  @default(false)
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([creatorId])
+  @@index([isPublic])
+  @@index([category])
+}
+
+// ==================== 奖励系统 ====================
+
+/// 奖励资产表
+model Reward {
+  id        Int      @id @default(autoincrement())
+  growerId  Int      @unique
+  grower    User     @relation(fields: [growerId], references: [id])
+  bones     Int      @default(0)
+  fish      Int      @default(0)
+  gems      Int      @default(0)
+  hearts    Int      @default(0)
+  stars     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 奖励流水
+  transactions RewardTransaction[]
+}
+
+/// 奖励流水表
+model RewardTransaction {
+  id        Int      @id @default(autoincrement())
+  rewardId  Int
+  reward    Reward   @relation(fields: [rewardId], references: [id])
+  type      TransactionType
+  amount    Int
+  balance   Int      // 交易后余额
+  reason    String?
+  taskId    Int?
+  createdAt DateTime @default(now())
+
+  @@index([rewardId])
+  @@index([type])
+}
+
+enum TransactionType {
+  EARN      // 获得
+  SPEND     // 花费
+  GIFT      // 赠送
+  REVOKE    // 撤销
+}
+
+// ==================== 装饰系统 ====================
+
+/// 装饰物品表
+model Decoration {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    DecorationCategory
+  rarity      Rarity   @default(COMMON)
+  priceType   CurrencyType
+  price       Int
+  warmthBonus Int      @default(0)
+  imageUrl    String?
+  description String?
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 用户拥有的装饰
+  userDecorations UserDecoration[]
+
+  @@index([category])
+  @@index([rarity])
+}
+
+enum DecorationCategory {
+  HOUSE
+  FURNITURE
+  WALL
+  PLANT
+  EFFECT
+  PET
+}
+
+enum Rarity {
+  COMMON    // 普通
+  RARE      // 稀有
+  EPIC      // 史诗
+  LEGENDARY // 传说
+}
+
+enum CurrencyType {
+  BONES
+  FISH
+  GEMS
+}
+
+/// 用户装饰物品表
+model UserDecoration {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  decorationId Int
+  decoration   Decoration @relation(fields: [decorationId], references: [id])
+  quantity     Int      @default(1)
+  isEquipped   Boolean  @default(false)
+  position     String?  // JSON {x, y, rotation}
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, decorationId])
+  @@index([userId])
+}
+
+// ==================== 小屋系统 ====================
+
+/// 小屋表
+model Cottage {
+  id            Int      @id @default(autoincrement())
+  growerId      Int      @unique
+  grower        User     @relation(fields: [growerId], references: [id])
+  level         Int      @default(1)
+  experience    Int      @default(0)
+  warmth        Int      @default(0)
+  theme         String?
+  backgroundUrl String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([growerId])
+}
+
+// ==================== 成就系统 ====================
+
+/// 成就表
+model Achievement {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  iconUrl     String?
+  category    String?
+  condition   String   // JSON 条件
+  points      Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@index([category])
+}
+
+/// 用户成就表
+model UserAchievement {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+  achievementId  Int
+  achievement    Achievement @relation(fields: [achievementId], references: [id])
+  unlockedAt     DateTime @default(now())
+  progress       Int      @default(0)
+  isClaimed      Boolean  @default(false)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// ==================== 消息系统 ====================
+
+/// 通知表
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  content   String?
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+enum NotificationType {
+  SYSTEM
+  TASK
+  RELATIONSHIP
+  REWARD
+  ACHIEVEMENT
+}
+
+/// 私信表
+model Message {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  sender     User     @relation(fields: [senderId], references: [id])
+  receiverId Int
+  receiver   User     @relation(fields: [receiverId], references: [id])
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+// ==================== 系统配置 ====================
+
+/// 系统配置表
+model SystemConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  type      String   @default("string")
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+/// 敏感词表
+model SensitiveWord {
+  id        Int      @id @default(autoincrement())
+  word      String   @unique
+  category  String
+  level     Int      @default(1) // 1 警告 2 屏蔽 3 封禁
+  createdAt DateTime @default(now())
+
+  @@index([category])
+}
