@@ -1,4 +1,4 @@
-// Partner Task App - Prisma Schema
+// Partner Task App - Prisma Schema (SQLite compatible)
 // 伙伴任务打卡系统 - 数据库模型
 
 generator client {
@@ -17,7 +17,7 @@ model User {
   id              Int      @id @default(autoincrement())
   username        String   @unique
   passwordHash    String
-  role            Role     @default(GROWER)
+  role            String   @default("GROWER") // ADMIN/GUIDE/GROWER
   nickname        String?
   avatarUrl       String?
   email           String?  @unique
@@ -33,23 +33,19 @@ model User {
   // 关系
   guideRelationships   Relationship[] @relation("GuideRelationships")
   growerRelationships  Relationship[] @relation("GrowerRelationships")
-  tasks                Task[]
+  taskGuide            Task[]         @relation("TaskGuide")
+  taskGrower           Task[]         @relation("TaskGrower")
   rewards              Reward?
   cottage              Cottage?
   decorations          UserDecoration[]
   achievements         UserAchievement[]
   notifications        Notification[]
-  messages             Message[]
+  messageSender        Message[]      @relation("MessageSender")
+  messageReceiver      Message[]      @relation("MessageReceiver")
 
   @@index([username])
   @@index([email])
   @@index([role])
-}
-
-enum Role {
-  ADMIN
-  GUIDE
-  GROWER
 }
 
 // ==================== 关系系统 ====================
@@ -61,8 +57,8 @@ model Relationship {
   guide               User     @relation("GuideRelationships", fields: [guideId], references: [id])
   growerId            Int
   grower              User     @relation("GrowerRelationships", fields: [growerId], references: [id])
-  mode                RelationMode @default(PARTNER)
-  status              RelationStatus @default(PENDING)
+  mode                String   @default("PARTNER") // PARTNER/GUIDE_GROWER
+  status              String   @default("PENDING") // PENDING/ACTIVE/DISSOLVING/DISSOLVED
   startDate           DateTime?
   endDate             DateTime?
   agreementContent    String?
@@ -70,7 +66,7 @@ model Relationship {
   growerSign          String?
   coolingOffDeadline  DateTime?
   createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  updatedAt          DateTime @updatedAt
 
   // 关系中的任务
   tasks               Task[]
@@ -81,18 +77,6 @@ model Relationship {
   @@index([status])
 }
 
-enum RelationMode {
-  PARTNER      // 成长伙伴模式（平等）
-  GUIDE_GROWER // 引导成长模式
-}
-
-enum RelationStatus {
-  PENDING    // 待确认
-  ACTIVE     // 有效
-  DISSOLVING // 解除中（冷静期）
-  DISSOLVED  // 已解除
-}
-
 // ==================== 任务系统 ====================
 
 /// 任务表
@@ -101,16 +85,16 @@ model Task {
   relationshipId  Int
   relationship    Relationship @relation(fields: [relationshipId], references: [id])
   guideId         Int
-  guide           User     @relation(fields: [guideId], references: [id])
+  guide           User     @relation("TaskGuide", fields: [guideId], references: [id])
   growerId        Int
-  grower          User     @relation(fields: [growerId], references: [id])
+  grower          User     @relation("TaskGrower", fields: [growerId], references: [id])
   templateId      Int?
   type            String?
   name            String
   description     String?
   difficulty      Int      @default(1) // 1-5
-  status          TaskStatus @default(PENDING)
-  proofType       ProofType @default(TEXT)
+  status          String   @default("PENDING") // PENDING/IN_PROGRESS/PENDING_REVIEW/COMPLETED/FAILED/ARCHIVED
+  proofType       String   @default("TEXT") // TEXT/IMAGE/VIDEO/NONE
   proofContent    String?
   rewardConfig    String?  // JSON
   suggestionConfig String?
@@ -120,7 +104,7 @@ model Task {
   auditedAt       DateTime?
   auditedBy       Int?
   auditComment    String?
-  repeatType      RepeatType @default(NONE)
+  repeatType      String   @default("NONE") // NONE/DAILY/WEEKLY/MONTHLY/CUSTOM
   repeatConfig    String?  // JSON
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -129,30 +113,6 @@ model Task {
   @@index([growerId])
   @@index([status])
   @@index([relationshipId])
-}
-
-enum TaskStatus {
-  PENDING     // 待开始
-  IN_PROGRESS // 进行中
-  PENDING_REVIEW // 待审核
-  COMPLETED   // 已完成
-  FAILED      // 已失败
-  ARCHIVED    // 已归档
-}
-
-enum ProofType {
-  TEXT
-  IMAGE
-  VIDEO
-  NONE
-}
-
-enum RepeatType {
-  NONE
-  DAILY
-  WEEKLY
-  MONTHLY
-  CUSTOM
 }
 
 // ==================== 任务模板 ====================
@@ -200,7 +160,7 @@ model RewardTransaction {
   id        Int      @id @default(autoincrement())
   rewardId  Int
   reward    Reward   @relation(fields: [rewardId], references: [id])
-  type      TransactionType
+  type      String   // EARN/SPEND/GIFT/REVOKE
   amount    Int
   balance   Int      // 交易后余额
   reason    String?
@@ -211,22 +171,15 @@ model RewardTransaction {
   @@index([type])
 }
 
-enum TransactionType {
-  EARN      // 获得
-  SPEND     // 花费
-  GIFT      // 赠送
-  REVOKE    // 撤销
-}
-
 // ==================== 装饰系统 ====================
 
 /// 装饰物品表
 model Decoration {
   id          Int      @id @default(autoincrement())
   name        String
-  category    DecorationCategory
-  rarity      Rarity   @default(COMMON)
-  priceType   CurrencyType
+  category    String   @default("FURNITURE") // HOUSE/FURNITURE/WALL/PLANT/EFFECT/PET
+  rarity      Int      @default(1) // 1 普通/2 稀有/3 史诗/4 传说
+  priceType   String   @default("BONES") // BONES/FISH/GEMS
   price       Int
   warmthBonus Int      @default(0)
   imageUrl    String?
@@ -239,29 +192,6 @@ model Decoration {
   userDecorations UserDecoration[]
 
   @@index([category])
-  @@index([rarity])
-}
-
-enum DecorationCategory {
-  HOUSE
-  FURNITURE
-  WALL
-  PLANT
-  EFFECT
-  PET
-}
-
-enum Rarity {
-  COMMON    // 普通
-  RARE      // 稀有
-  EPIC      // 史诗
-  LEGENDARY // 传说
-}
-
-enum CurrencyType {
-  BONES
-  FISH
-  GEMS
 }
 
 /// 用户装饰物品表
@@ -339,7 +269,7 @@ model Notification {
   id        Int      @id @default(autoincrement())
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
-  type      NotificationType
+  type      String   @default("SYSTEM") // SYSTEM/TASK/RELATIONSHIP/REWARD/ACHIEVEMENT
   title     String
   content   String?
   isRead    Boolean  @default(false)
@@ -350,21 +280,13 @@ model Notification {
   @@index([isRead])
 }
 
-enum NotificationType {
-  SYSTEM
-  TASK
-  RELATIONSHIP
-  REWARD
-  ACHIEVEMENT
-}
-
 /// 私信表
 model Message {
   id         Int      @id @default(autoincrement())
   senderId   Int
-  sender     User     @relation(fields: [senderId], references: [id])
+  sender     User     @relation("MessageSender", fields: [senderId], references: [id])
   receiverId Int
-  receiver   User     @relation(fields: [receiverId], references: [id])
+  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id])
   content    String
   isRead     Boolean  @default(false)
   createdAt  DateTime @default(now())

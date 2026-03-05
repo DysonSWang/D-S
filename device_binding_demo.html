@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>设备绑定</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: "Source Han Sans CN", "Source Han Sans SC", "Noto Sans CJK SC", "DIN Pro", "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #F5F7FA;
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.5;
+            font-feature-settings: "pnum" on, "lnum" on;
+        }
+
+        .numeric, .found-device-mac {
+            font-family: "Roboto", "DIN Pro", monospace;
+            font-feature-settings: "pnum" on, "lnum" on;
+        }
+
+        .english, .found-device-name {
+            font-family: "DIN Pro", "Roboto", sans-serif;
+        }
+
+        :root {
+            --primary-color: #00C2CC;
+            --primary-light: #33D4DD;
+            --primary-dark: #00AAB2;
+            --primary-gradient: linear-gradient(135deg, #00C2CC 0%, #00AAB2 100%);
+            --primary-light-bg: rgba(0, 194, 204, 0.08);
+            --accent-color: #FB9851;
+            --accent-light: #FFB47A;
+            --accent-gradient: linear-gradient(135deg, #FB9851 0%, #FB7A1E 100%);
+            --success-color: #00C2CC;
+            --success-light: rgba(0, 194, 204, 0.1);
+            --error-color: #F04838;
+            --error-light: rgba(240, 72, 56, 0.1);
+            --warning-color: #FB7A1E;
+            --warning-light: rgba(251, 122, 30, 0.1);
+            --link-color: #00AAB2;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --text-tertiary: #9CA3AF;
+            --border-color: #E5E7EB;
+            --bg-card: #FFFFFF;
+            --bg-subtle: #F9FAFB;
+            --glucose-color: #FB9851;
+            --glucose-light: rgba(251, 152, 81, 0.1);
+            --bp-color: #00C2CC;
+            --bp-light: rgba(0, 194, 204, 0.1);
+        }
+
+        .navbar {
+            background: var(--bg-card);
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .navbar-back {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .navbar-back:active {
+            background: var(--bg-subtle);
+        }
+
+        .navbar-back svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-primary);
+        }
+
+        .navbar-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+            text-align: center;
+        }
+
+        .navbar-placeholder {
+            width: 32px;
+        }
+
+        .page {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .page.hidden {
+            display: none;
+        }
+
+        .tip-card {
+            background: var(--primary-light-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border: 1px solid rgba(0, 194, 204, 0.15);
+        }
+
+        .tip-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tip-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--primary-color);
+        }
+
+        .tip-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .step-dot.active {
+            background: var(--primary-color);
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .step-dot.completed {
+            background: var(--success-color);
+        }
+
+        .device-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .device-card:active {
+            background: var(--bg-subtle);
+            transform: scale(0.98);
+        }
+
+        .device-card.selected {
+            border-color: var(--primary-color);
+            background: var(--primary-light-bg);
+        }
+
+        .device-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .device-icon.glucose {
+            background: linear-gradient(135deg, #FFF4E8 0%, #FFE8D4 100%);
+        }
+
+        .device-icon.bp {
+            background: linear-gradient(135deg, #E8F9F9 0%, #D4F4F4 100%);
+        }
+
+        .device-icon svg {
+            width: 36px;
+            height: 36px;
+        }
+
+        .device-icon.glucose svg {
+            fill: var(--glucose-color);
+        }
+
+        .device-icon.bp svg {
+            fill: var(--bp-color);
+        }
+
+        .device-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .device-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .new-badge {
+            background: var(--accent-gradient);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .device-model {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            margin-bottom: 6px;
+        }
+
+        .device-connection {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--link-color);
+            background: var(--bp-light);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .device-connection svg {
+            width: 12px;
+            height: 12px;
+            fill: var(--link-color);
+        }
+
+        .device-arrow {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .device-arrow svg {
+            width: 100%;
+            height: 100%;
+            fill: var(--text-tertiary);
+        }
+
+        .device-illustration {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 32px 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .device-illustration .placeholder {
+            width: 160px;
+            height: 160px;
+            background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+            border-radius: 24px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .device-illustration .placeholder svg {
+            width: 80px;
+            height: 80px;
+            fill: var(--text-tertiary);
+        }
+
+        .device-illustration-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .device-illustration-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .instruction-list {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px 16px;
+            margin-bottom: 20px;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .instruction-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .instruction-item:first-child {
+            padding-top: 0;
+        }
+
+        .instruction-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .instruction-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            flex: 1;
+        }
+
+        .instruction-note {
+            font-size: 12px;
+            color: var(--warning-color);
+            background: var(--warning-light);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        .searching {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .search-animation {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            position: relative;
+        }
+
+        .search-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .search-ring:nth-child(2) {
+            width: 70%;
+            height: 70%;
+            top: 15%;
+            left: 15%;
+            border-width: 2px;
+            border-top-color: var(--primary-light);
+            animation: spin 0.8s linear infinite reverse;
+        }
+
+        .search-ring:nth-child(3) {
+            width: 40%;
+            height: 40%;
+            top: 30%;
+            left: 30%;
+            border-width: 2px;
+            border-top-color: var(--primary-dark);
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .searching-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .searching-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .search-timer {
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        .search-timer .time {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .search-timeout {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .timeout-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, rgba(240, 72, 56, 0.15) 0%, rgba(240, 72, 56, 0.1) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeout-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: var(--error-color);
+        }
+
+        .timeout-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .timeout-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .found-device {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .found-device:active {
+            background: var(--bg-subtle);
+        }
+
+        .found-device.selected {
+            border-color: var(--primary-color);
+            background: var(--primary-light-bg);
+        }
+
+        .found-device-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bp-light);
+        }
+
+        .found-device-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--bp-color);
+        }
+
+        .found-device-info {
+            flex: 1;
+        }
+
+        .found-device-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .found-device-mac {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-family: monospace;
+            margin-bottom: 4px;
+        }
+
+        .device-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .found-device.selected .device-check {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .found-device.selected .device-check svg {
+            width: 16px;
+            height: 16px;
+            fill: white;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 194, 204, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-success {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 194, 204, 0.3);
+        }
+
+        .success-state {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .success-icon {
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, rgba(0, 194, 204, 0.15) 0%, rgba(0, 170, 178, 0.1) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .success-icon svg {
+            width: 48px;
+            height: 48px;
+            fill: var(--success-color);
+        }
+
+        .success-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .success-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .page-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .safe-area {
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-back" onclick="goBack()">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                </svg>
+            </div>
+            <div class="navbar-title" id="navTitle">设备绑定</div>
+            <div class="navbar-placeholder"></div>
+        </div>
+    </div>
+
+    <!-- ========== 页面 1: 设备选择 ========== -->
+    <div class="page" id="page1">
+        <div class="tip-card">
+            <div class="tip-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+            </div>
+            <div class="tip-text">
+                请确保设备已开机并处于蓝牙可发现状态，将设备靠近手机（1 米内）后进行绑定
+            </div>
+        </div>
+
+        <div class="device-card" onclick="selectDevice('三诺血糖仪臻准 2000', 'glucose')">
+            <div class="device-icon glucose">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM12 19a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm1.5-6h-3V7h3v6z"/>
+                </svg>
+            </div>
+            <div class="device-info">
+                <div class="device-name">
+                    三诺血糖仪臻准 2000
+                    <span class="new-badge">NEW</span>
+                </div>
+                <div class="device-model">型号：BA-2000</div>
+                <div class="device-connection">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 12 13.41 19 6.41 17.59 5 13 9.59V2h4.71l-1.29 1.29z"/>
+                    </svg>
+                    蓝牙 4.0 BLE
+                </div>
+            </div>
+            <div class="device-arrow">
+                <svg viewBox="0 0 24 24">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="device-card" onclick="selectDevice('三诺血压计 BA-803', 'bp')">
+            <div class="device-icon bp">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </div>
+            <div class="device-info">
+                <div class="device-name">
+                    三诺血压计 BA-803
+                    <span class="new-badge">NEW</span>
+                </div>
+                <div class="device-model">型号：BA-803</div>
+                <div class="device-connection">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 12 13.41 19 6.41 17.59 5 13 9.59V2h4.71l-1.29 1.29z"/>
+                    </svg>
+                    蓝牙 4.0 BLE
+                </div>
+            </div>
+            <div class="device-arrow">
+                <svg viewBox="0 0 24 24">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 页面 2: 操作指引 ========== -->
+    <div class="page hidden" id="page2">
+        <div class="steps">
+            <div class="step-dot completed"></div>
+            <div class="step-dot active"></div>
+            <div class="step-dot"></div>
+            <div class="step-dot"></div>
+        </div>
+
+        <div class="page-title" id="step2Title">操作指引</div>
+        <div class="page-desc" id="step2Desc">请按以下步骤操作设备</div>
+
+        <div class="device-illustration">
+            <div class="placeholder">
+                <svg viewBox="0 0 24 24" id="deviceIcon">
+                    <path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM12 19a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm1.5-6h-3V7h3v6z"/>
+                </svg>
+            </div>
+            <div class="device-illustration-title" id="deviceName">三诺血糖仪臻准 2000</div>
+            <div class="device-illustration-desc" id="deviceModel">型号：BA-2000</div>
+        </div>
+
+        <div class="instruction-list" id="instructionList">
+            <!-- 动态生成 -->
+        </div>
+
+        <button class="btn btn-primary" onclick="startSearch()">
+            <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;">
+                <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 12 13.41 19 6.41 17.59 5 13 9.59V2h4.71l-1.29 1.29z"/>
+            </svg>
+            开始搜索设备
+        </button>
+
+        <div class="safe-area"></div>
+    </div>
+
+    <!-- ========== 页面 3: 搜索设备 ========== -->
+    <div class="page hidden" id="page3">
+        <div class="steps">
+            <div class="step-dot completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-dot active"></div>
+            <div class="step-dot"></div>
+        </div>
+
+        <div class="searching" id="searchingContent">
+            <div class="search-animation">
+                <div class="search-ring"></div>
+                <div class="search-ring"></div>
+                <div class="search-ring"></div>
+            </div>
+            <div class="searching-title">正在搜索设备...</div>
+            <div class="searching-desc">请保持设备在附近（1 米内）</div>
+            <div class="search-timer">
+                剩余时间：<span class="time" id="searchTimer">30</span>秒
+            </div>
+        </div>
+
+        <div class="search-timeout hidden" id="timeoutContent">
+            <div class="timeout-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+            </div>
+            <div class="timeout-title">未找到设备</div>
+            <div class="timeout-desc">
+                搜索超时，请检查：<br>
+                1. 设备已开机且蓝牙图标闪烁<br>
+                2. 设备靠近手机（1 米内）<br>
+                3. 设备处于待机状态（未在测量）
+            </div>
+            <button class="btn btn-primary" onclick="retrySearch()">
+                重新搜索
+            </button>
+        </div>
+    </div>
+
+    <!-- ========== 页面 4: 选择搜索结果 ========== -->
+    <div class="page hidden" id="page4">
+        <div class="steps">
+            <div class="step-dot completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-dot active"></div>
+        </div>
+
+        <div class="page-title">选择设备</div>
+        <div class="page-desc">找到以下可用设备，请选择</div>
+
+        <div class="found-device selected" onclick="selectFoundDevice(this)">
+            <div class="found-device-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 12 13.41 19 6.41 17.59 5 13 9.59V2h4.71l-1.29 1.29z"/>
+                </svg>
+            </div>
+            <div class="found-device-info">
+                <div class="found-device-name" id="foundDeviceName">Sinocare_BA2000_7113</div>
+                <div class="found-device-mac" id="foundDeviceMac">MAC: 00:1A:7D:DA:71:13</div>
+            </div>
+            <div class="device-check">
+                <svg viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="startBinding()">
+            连接设备
+        </button>
+
+        <div class="safe-area"></div>
+    </div>
+
+    <!-- ========== 页面 5: 绑定中 ========== -->
+    <div class="page hidden" id="page5">
+        <div class="steps">
+            <div class="step-dot completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-dot active"></div>
+        </div>
+
+        <div class="searching">
+            <div class="search-animation">
+                <div class="search-ring"></div>
+                <div class="search-ring"></div>
+                <div class="search-ring"></div>
+            </div>
+            <div class="searching-title">正在连接设备...</div>
+            <div class="searching-desc">请稍候，正在建立蓝牙连接</div>
+        </div>
+    </div>
+
+    <!-- ========== 页面 6: 绑定成功 ========== -->
+    <div class="page hidden" id="page6">
+        <div class="success-state">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+            </div>
+            <div class="success-title">绑定成功！</div>
+            <div class="success-desc">
+                <span id="successDeviceName">三诺血糖仪臻准 2000</span> 已连接<br>
+                现在可以开始使用设备测量数据了
+            </div>
+        </div>
+
+        <button class="btn btn-success" onclick="goToHome()">
+            完成
+        </button>
+
+        <div class="safe-area"></div>
+    </div>
+
+    <script>
+        let currentDevice = '';
+        let deviceType = '';
+        let searchTimerInterval = null;
+        let searchTimeRemaining = 30;
+
+        const deviceConfig = {
+            glucose: {
+                name: '三诺血糖仪臻准 2000',
+                model: 'BA-2000',
+                broadcastName: 'Sinocare_BA2000',
+                instructions: [
+                    { text: '长按血糖仪电源键 3 秒开机', note: null },
+                    { text: '等待屏幕显示蓝牙图标闪烁', note: '闪烁表示可配对' },
+                    { text: '将血糖仪靠近手机（1 米内）', note: null },
+                    { text: '确保血糖仪处于待机状态', note: '未插入试纸' }
+                ]
+            },
+            bp: {
+                name: '三诺血压计 BA-803',
+                model: 'BA-803',
+                broadcastName: 'Sinocare_BA803',
+                instructions: [
+                    { text: '安装电池并长按血压计电源键开机', note: '约 3 秒' },
+                    { text: '等待屏幕显示蓝牙符号', note: '部分型号需长按"记忆"键 5 秒进入配对' },
+                    { text: '将血压计靠近手机（1 米内）', note: null },
+                    { text: '确保袖带已正确缠绕', note: '测量状态下无法配对' }
+                ]
+            }
+        };
+
+        function selectDevice(name, type) {
+            currentDevice = name;
+            deviceType = type;
+            const config = deviceConfig[type];
+            
+            document.getElementById('deviceName').textContent = config.name;
+            document.getElementById('deviceModel').textContent = '型号：' + config.model;
+            
+            const icon = document.getElementById('deviceIcon');
+            if (type === 'glucose') {
+                icon.innerHTML = '<path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM12 19a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm1.5-6h-3V7h3v6z"/>';
+            } else {
+                icon.innerHTML = '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
+            }
+            
+            const list = document.getElementById('instructionList');
+            list.innerHTML = config.instructions.map((item, index) => `
+                <div class="instruction-item">
+                    <div class="instruction-number">${index + 1}</div>
+                    <div class="instruction-text">
+                        ${item.text}
+                        ${item.note ? `<div class="instruction-note">${item.note}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            const macSuffix = Math.floor(1000 + Math.random() * 9000);
+            const broadcastName = config.broadcastName + '_' + macSuffix;
+            const fullMac = '00:1A:7D:DA:' + macSuffix.toString(16).toUpperCase().padStart(4, '0');
+            
+            document.getElementById('foundDeviceName').textContent = broadcastName;
+            document.getElementById('foundDeviceMac').textContent = 'MAC: ' + fullMac;
+            document.getElementById('successDeviceName').textContent = name;
+            
+            goToPage(2);
+        }
+
+        function goToPage(pageNum) {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.getElementById('page' + pageNum).classList.remove('hidden');
+            
+            const titles = {
+                1: '设备绑定',
+                2: '操作指引',
+                3: '搜索设备',
+                4: '选择设备',
+                5: '连接中',
+                6: '绑定成功'
+            };
+            document.getElementById('navTitle').textContent = titles[pageNum];
+            
+            if (searchTimerInterval) {
+                clearInterval(searchTimerInterval);
+                searchTimerInterval = null;
+            }
+        }
+
+        function startSearch() {
+            goToPage(3);
+            
+            document.getElementById('searchingContent').classList.remove('hidden');
+            document.getElementById('timeoutContent').classList.add('hidden');
+            searchTimeRemaining = 30;
+            document.getElementById('searchTimer').textContent = searchTimeRemaining;
+            
+            searchTimerInterval = setInterval(() => {
+                searchTimeRemaining--;
+                document.getElementById('searchTimer').textContent = searchTimeRemaining;
+                
+                if (searchTimeRemaining <= 0) {
+                    clearInterval(searchTimerInterval);
+                    showSearchTimeout();
+                }
+            }, 1000);
+            
+            const searchDelay = 2000 + Math.random() * 3000;
+            setTimeout(() => {
+                if (searchTimeRemaining > 0) {
+                    clearInterval(searchTimerInterval);
+                    goToPage(4);
+                }
+            }, searchDelay);
+        }
+
+        function showSearchTimeout() {
+            document.getElementById('searchingContent').classList.add('hidden');
+            document.getElementById('timeoutContent').classList.remove('hidden');
+        }
+
+        function retrySearch() {
+            startSearch();
+        }
+
+        function selectFoundDevice(el) {
+            document.querySelectorAll('.found-device').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        function startBinding() {
+            goToPage(5);
+            setTimeout(() => {
+                goToPage(6);
+            }, 2000);
+        }
+
+        function goBack() {
+            const currentPage = document.querySelector('.page:not(.hidden)').id;
+            const pageNum = parseInt(currentPage.replace('page', ''));
+            if (pageNum > 1) {
+                goToPage(pageNum - 1);
+            }
+        }
+
+        function goToHome() {
+            // 重置所有状态，返回设备选择页
+            currentDevice = '';
+            deviceType = '';
+            if (searchTimerInterval) {
+                clearInterval(searchTimerInterval);
+                searchTimerInterval = null;
+            }
+            searchTimeRemaining = 30;
+            // 清除所有选中状态
+            document.querySelectorAll('.device-card').forEach(d => d.classList.remove('selected'));
+            document.querySelectorAll('.found-device').forEach(d => d.classList.remove('selected'));
+            // 替换历史记录，防止后退回到成功页
+            window.location.replace(window.location.pathname);
+        }
+    </script>
+</body>
+</html>

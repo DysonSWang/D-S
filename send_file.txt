@@ -1,0 +1,14 @@
+📄 设备绑定功能需求文档 - 完整版.docx (153KB)
+
+已为你生成完整的需求文档，包含：
+✅ 6 个步骤的界面截图
+✅ 完整的技术规格
+✅ UI/UX 规范表格
+✅ 测试要求清单
+
+[DINGTALK_FILE]{"path":"/root/.openclaw/workspace/设备绑定功能需求文档 - 完整版.docx","fileName":"设备绑定功能需求文档 - 完整版.docx","fileType":"docx"}[/DINGTALK_FILE]
+
+如无法下载，请告诉我，我可以：
+1. 转成 PDF 发送
+2. 直接展示文档内容
+3. 把截图单独发出来

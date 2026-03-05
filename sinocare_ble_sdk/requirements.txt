@@ -1,0 +1,18 @@
+# 三诺设备蓝牙对接 SDK 依赖
+
+# BLE 库
+bleak>=0.20.0
+bleak-retry-connector>=3.0.0
+
+# 异步支持
+asyncio>=3.4.3
+
+# 数据处理
+numpy>=1.24.0
+
+# 日志
+loguru>=0.7.0
+
+# 测试
+pytest>=7.4.0
+pytest-asyncio>=0.21.0

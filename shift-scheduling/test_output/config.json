@@ -1,0 +1,12 @@
+{
+  "shift_ratio": {
+    "G": 0.4,
+    "T": 0.35,
+    "Y": 0.25
+  },
+  "off_days_per_month": 8,
+  "max_consecutive_work_days": 6,
+  "consecutive_work_threshold": 3,
+  "min_shift_types_after_threshold": 2,
+  "total_employees": 200
+}
