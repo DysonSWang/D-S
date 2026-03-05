@@ -121,5 +121,5 @@ export const sensitiveWordFilter = (req: Request, res: Response, next: NextFunct
   next();
 };
 
-// Export for use in services
-export { loadSensitiveWords, containsSensitiveWord, filterSensitiveWords };
+// Export for use in services (already exported above)
+// export { loadSensitiveWords, containsSensitiveWord, filterSensitiveWords };

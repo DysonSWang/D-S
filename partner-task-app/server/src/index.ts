@@ -13,8 +13,8 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Import routes
 import authRoutes from './routes/auth';
+import relationshipRoutes from './routes/relationship';
 // TODO: import userRoutes from './routes/user';
-// TODO: import relationshipRoutes from './routes/relationship';
 // TODO: import taskRoutes from './routes/task';
 // TODO: import rewardRoutes from './routes/reward';
 // TODO: import cottageRoutes from './routes/cottage';
@@ -83,8 +83,8 @@ app.get('/api', (req, res) => {
 
 // Register routes
 app.use('/api/auth', authRoutes);
+app.use('/api/relationships', relationshipRoutes);
 // TODO: app.use('/api/users', userRoutes);
-// TODO: app.use('/api/relationships', relationshipRoutes);
 // TODO: app.use('/api/tasks', taskRoutes);
 // TODO: app.use('/api/rewards', rewardRoutes);
 // TODO: app.use('/api/cottage', cottageRoutes);

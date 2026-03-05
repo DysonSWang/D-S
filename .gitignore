@@ -1,0 +1,41 @@
+# OpenClaw workspace root .gitignore
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build outputs
+dist/
+build/
+
+# Partner task app
+partner-task-app/node_modules/
+partner-task-app/client/node_modules/
+partner-task-app/server/node_modules/
+partner-task-app/client/package-lock.json
+partner-task-app/server/package-lock.json
+
+# Other projects
+shift-scheduling/venv/
+mem0-venv/
+
+# Generated files
+skills/image-generate/generated_image_*.png
