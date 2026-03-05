@@ -14,10 +14,10 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 // Import routes
 import authRoutes from './routes/auth';
 import relationshipRoutes from './routes/relationship';
+import taskRoutes from './routes/task';
+import rewardRoutes from './routes/reward';
+import cottageRoutes from './routes/cottage';
 // TODO: import userRoutes from './routes/user';
-// TODO: import taskRoutes from './routes/task';
-// TODO: import rewardRoutes from './routes/reward';
-// TODO: import cottageRoutes from './routes/cottage';
 // TODO: import adminRoutes from './routes/admin';
 
 // Import middleware
@@ -84,10 +84,10 @@ app.get('/api', (req, res) => {
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/relationships', relationshipRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/rewards', rewardRoutes);
+app.use('/api/cottage', cottageRoutes);
 // TODO: app.use('/api/users', userRoutes);
-// TODO: app.use('/api/tasks', taskRoutes);
-// TODO: app.use('/api/rewards', rewardRoutes);
-// TODO: app.use('/api/cottage', cottageRoutes);
 // TODO: app.use('/api/admin', adminRoutes);
 
 // ==================== Error Handling ====================
