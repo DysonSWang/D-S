@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Python virtual environments
+venv/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build outputs
+dist/
+build/
+*.exe
+*.app
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database (SQLite)
+*.db
+*.sqlite
+*.sqlite3
+
+# OSS credentials
+oss_config.json
+
+# Sensitive files
+*.pem
+*.key
+secrets/
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
