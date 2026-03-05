@@ -89,13 +89,23 @@ async function main() {
   });
   console.log('✅ 小屋创建成功');
 
-  // 7. 创建装饰物品
+  // 7. 创建装饰物品（更多物品）
   const decorations = [
     { name: '木质桌子', category: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 50, warmthBonus: 5 },
     { name: '绿色植物', category: 'PLANT', rarity: 1, priceType: 'BONES', price: 30, warmthBonus: 3 },
     { name: '温馨地毯', category: 'FURNITURE', rarity: 2, priceType: 'FISH', price: 5, warmthBonus: 8 },
     { name: '水晶吊灯', category: 'FURNITURE', rarity: 3, priceType: 'GEMS', price: 10, warmthBonus: 15 },
     { name: '可爱宠物', category: 'PET', rarity: 2, priceType: 'FISH', price: 8, warmthBonus: 10 },
+    { name: '舒适沙发', category: 'FURNITURE', rarity: 2, priceType: 'BONES', price: 80, warmthBonus: 12 },
+    { name: '艺术挂画', category: 'WALL', rarity: 1, priceType: 'BONES', price: 40, warmthBonus: 4 },
+    { name: '落地窗', category: 'HOUSE', rarity: 3, priceType: 'GEMS', price: 15, warmthBonus: 20 },
+    { name: '小台灯', category: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 25, warmthBonus: 3 },
+    { name: '书架', category: 'FURNITURE', rarity: 1, priceType: 'BONES', price: 60, warmthBonus: 6 },
+    { name: '鲜花瓶', category: 'PLANT', rarity: 1, priceType: 'BONES', price: 20, warmthBonus: 2 },
+    { name: '毛绒玩具', category: 'PET', rarity: 1, priceType: 'BONES', price: 35, warmthBonus: 4 },
+    { name: '星空壁纸', category: 'WALL', rarity: 3, priceType: 'GEMS', price: 12, warmthBonus: 18 },
+    { name: '音乐盒', category: 'EFFECT', rarity: 2, priceType: 'FISH', price: 6, warmthBonus: 9 },
+    { name: '喷泉雕塑', category: 'EFFECT', rarity: 4, priceType: 'GEMS', price: 20, warmthBonus: 25 },
   ];
 
   for (const dec of decorations) {

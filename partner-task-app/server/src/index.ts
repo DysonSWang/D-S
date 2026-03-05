@@ -17,8 +17,8 @@ import relationshipRoutes from './routes/relationship';
 import taskRoutes from './routes/task';
 import rewardRoutes from './routes/reward';
 import cottageRoutes from './routes/cottage';
-// TODO: import userRoutes from './routes/user';
-// TODO: import adminRoutes from './routes/admin';
+import userRoutes from './routes/user';
+import adminRoutes from './routes/admin';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -87,8 +87,8 @@ app.use('/api/relationships', relationshipRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/rewards', rewardRoutes);
 app.use('/api/cottage', cottageRoutes);
-// TODO: app.use('/api/users', userRoutes);
-// TODO: app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ==================== Error Handling ====================
 
