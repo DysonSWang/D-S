@@ -68,11 +68,14 @@ function App() {
         {/* Public Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
-          <Route path="/simple-test" element={<SimpleTest />} />
           <Route path="/sso-login" element={<SSOLogin />} />
           <Route path="/test-sso" element={<TestSSO />} />
           <Route path="/register" element={<Register />} />
         </Route>
+        
+        {/* Test Routes (no layout) */}
+        <Route path="/simple-test" element={<SimpleTest />} />
+        <Route path="/direct-test" element={<SimpleTest />} />
 
         {/* Guide Routes */}
         <Route
