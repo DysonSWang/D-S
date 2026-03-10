@@ -105,13 +105,13 @@ app.use('/api/admin', adminRoutes);
 import preferenceRoutes from './routes/preferences';
 app.use('/api/users', preferenceRoutes);
 
+// Import random task routes (必须在 task routes 之前注册)
+import randomTaskRoutes from './routes/randomTasks';
+app.use('/api/tasks/random', randomTaskRoutes);
+
 // Import achievement routes
 import achievementRoutes from './routes/achievements';
 app.use('/api/achievements', achievementRoutes);
-
-// Import random task routes
-import randomTaskRoutes from './routes/randomTasks';
-app.use('/api/tasks/random', randomTaskRoutes);
 
 // Import shop routes
 import shopRoutes from './routes/shop';
