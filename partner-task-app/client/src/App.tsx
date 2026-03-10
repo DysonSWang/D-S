@@ -45,6 +45,7 @@ import AdminTaskTemplates from './pages/admin/TaskTemplates';
 import SSOLogin from './pages/SSOLogin';
 import TestSSO from './pages/TestSSO';
 import SimpleTest from './pages/SimpleTest';
+import ChakraTest from './pages/ChakraTest';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) => {
@@ -75,6 +76,7 @@ function App() {
         
         {/* Test Routes (no layout) */}
         <Route path="/simple-test" element={<SimpleTest />} />
+        <Route path="/chakra-test" element={<ChakraTest />} />
         <Route path="/direct-test" element={<SimpleTest />} />
 
         {/* Guide Routes */}
