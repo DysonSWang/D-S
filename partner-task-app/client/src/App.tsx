@@ -44,6 +44,7 @@ import AdminTaskTemplates from './pages/admin/TaskTemplates';
 // SSO
 import SSOLogin from './pages/SSOLogin';
 import TestSSO from './pages/TestSSO';
+import SimpleSSOLogin from './pages/SimpleSSOLogin';
 import SimpleTest from './pages/SimpleTest';
 import ChakraTest from './pages/ChakraTest';
 
@@ -69,9 +70,12 @@ function App() {
         {/* Public Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
-          <Route path="/sso-login" element={<SSOLogin />} />
           <Route path="/register" element={<Register />} />
         </Route>
+        
+        {/* SSO Login (simple version) */}
+        <Route path="/sso-login" element={<SimpleSSOLogin />} />
+        <Route path="/sso-login-full" element={<SSOLogin />} />
         
         {/* Test Routes (no layout) */}
         <Route path="/simple-test" element={<SimpleTest />} />
