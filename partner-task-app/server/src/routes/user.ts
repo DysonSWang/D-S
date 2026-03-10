@@ -54,6 +54,43 @@ router.get('/', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, 
 });
 
 /**
+ * GET /api/users/me
+ * 获取当前用户信息
+ */
+router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        username: true,
+        nickname: true,
+        email: true,
+        phone: true,
+        role: true,
+        avatarUrl: true,
+        ageVerified: true,
+        timezone: true,
+        taskPreferences: true,
+        rewardPreferences: true,
+        suggestionStyle: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    res.json({
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/users/:id
  * 获取用户详情（管理员）
  */
@@ -141,43 +178,6 @@ router.put('/:id/status', authenticate, authorize('ADMIN'), async (req: AuthRequ
 
     res.json({
       message: 'User status updated',
-      user,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * GET /api/users/me
- * 获取当前用户信息
- */
-router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      select: {
-        id: true,
-        username: true,
-        nickname: true,
-        email: true,
-        phone: true,
-        role: true,
-        avatarUrl: true,
-        ageVerified: true,
-        timezone: true,
-        taskPreferences: true,
-        rewardPreferences: true,
-        suggestionStyle: true,
-        createdAt: true,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundError('User not found');
-    }
-
-    res.json({
       user,
     });
   } catch (error) {

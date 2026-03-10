@@ -6,6 +6,53 @@ import { NotFoundError, ForbiddenError, BadRequestError } from '../middleware/er
 const router = Router();
 
 /**
+ * GET /api/admin/users
+ * 获取用户统计列表
+ */
+router.get('/users', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    const { role, status, limit = 50, offset = 0 } = req.query;
+
+    const where: any = {};
+
+    if (role) {
+      where.role = role;
+    }
+
+    if (status) {
+      where.status = parseInt(status as string);
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        username: true,
+        nickname: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        ageVerified: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: parseInt(limit as string),
+      skip: parseInt(offset as string),
+    });
+
+    const total = await prisma.user.count({ where });
+
+    res.json({
+      users,
+      total,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/admin/stats
  * 获取管理统计数据
  */

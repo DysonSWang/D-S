@@ -17,6 +17,41 @@ import { checkAndUnlockAchievements } from '../services/achievementService';
 const router = Router();
 
 /**
+ * GET /api/relationships
+ * 获取当前用户的关系列表
+ */
+router.get('/', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const userId = req.user!.id;
+    
+    const relationships = await prisma.relationship.findMany({
+      where: {
+        OR: [
+          { guideId: userId },
+          { growerId: userId },
+        ],
+      },
+      include: {
+        guide: {
+          select: { id: true, username: true, nickname: true, avatarUrl: true },
+        },
+        grower: {
+          select: { id: true, username: true, nickname: true, avatarUrl: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      relationships,
+      total: relationships.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * POST /api/relationships/invite
  * 发送关系邀请
  */

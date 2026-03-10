@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { prisma } from '../db';
-import { authenticate } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -70,12 +70,28 @@ const RANDOM_TASKS = [
 ];
 
 /**
+ * GET /api/tasks/random
+ * 获取随机任务列表
+ */
+router.get('/', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: RANDOM_TASKS,
+      total: RANDOM_TASKS.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/tasks/random/draw
  * 抽取随机任务
  */
-router.get('/draw', authenticate, async (req, res) => {
+router.get('/draw', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user!.id;
     const { difficulty } = req.query;
 
     // 过滤任务池

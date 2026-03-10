@@ -9,6 +9,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import { prisma } from '../db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { BadRequestError } from '../middleware/errorHandler';
 import * as taskService from '../services/taskService';
@@ -20,6 +21,59 @@ import {
 } from '../validators/task.validator';
 
 const router = Router();
+
+/**
+ * GET /api/tasks
+ * 获取用户的任务列表
+ */
+router.get('/', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const userId = req.user!.id;
+    const { status, type, limit = 50, offset = 0 } = req.query;
+
+    const where: any = {
+      OR: [
+        { guideId: userId },
+        { growerId: userId },
+      ],
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (type) {
+      where.type = type;
+    }
+
+    const tasks = await prisma.task.findMany({
+      where,
+      include: {
+        guide: {
+          select: { id: true, username: true, nickname: true, avatarUrl: true },
+        },
+        grower: {
+          select: { id: true, username: true, nickname: true, avatarUrl: true },
+        },
+        relationship: {
+          select: { id: true, mode: true, status: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: parseInt(limit as string),
+      skip: parseInt(offset as string),
+    });
+
+    const total = await prisma.task.count({ where });
+
+    res.json({
+      tasks,
+      total,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * POST /api/tasks
