@@ -35,7 +35,7 @@ router.post('/login', async (req, res, next) => {
     const user = await prisma.user.findFirst({
       where: {
         username,
-        status: 'ACTIVE',
+        status: 1, // 数据库使用数字 1 表示 ACTIVE
       },
     });
 
