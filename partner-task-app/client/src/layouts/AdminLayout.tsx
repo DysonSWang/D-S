@@ -5,6 +5,7 @@ import {
   UserOutlined,
   SafetyCertificateOutlined,
   ShopOutlined,
+  BarChartOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
@@ -35,6 +36,11 @@ const AdminLayout = () => {
       key: '/admin/shop',
       icon: <ShopOutlined />,
       label: '商城管理',
+    },
+    {
+      key: '/admin/sales-stats',
+      icon: <BarChartOutlined />,
+      label: '销售统计',
     },
   ];
 

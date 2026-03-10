@@ -538,10 +538,20 @@ router.get('/admin/orders', authenticate, authorize('ADMIN'), async (req: AuthRe
 
 /**
  * GET /api/shop/admin/stats
- * 管理员 - 商城统计
+ * 管理员 - 商城统计（含销售情况）
  */
 router.get('/admin/stats', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
   try {
+    const { startDate, endDate } = req.query;
+
+    // 时间范围过滤
+    const where: any = {};
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate as string);
+      if (endDate) where.createdAt.lte = new Date(endDate as string);
+    }
+
     // 商品统计
     const itemStats = await prisma.shopItem.groupBy({
       by: ['category'],
@@ -557,7 +567,119 @@ router.get('/admin/stats', authenticate, authorize('ADMIN'), async (req: AuthReq
       _count: true,
     }).catch(() => []);
 
-    const totalOrders = await prisma.shopOrder.count();
+    const totalOrders = await prisma.shopOrder.count({ where });
+
+    // 销售统计 - 按商品
+    const salesByItem = await prisma.shopOrder.groupBy({
+      by: ['itemId'],
+      _count: true,
+      _sum: {
+        bonesSpent: true,
+        fishSpent: true,
+        gemsSpent: true,
+        heartsSpent: true,
+        starsSpent: true,
+      },
+      where,
+      orderBy: {
+        _count: {
+          id: 'desc',
+        },
+      },
+      take: 10,
+    }).catch(() => []) as any[];
+
+    // 获取商品信息
+    const itemIds = salesByItem.map(s => s.itemId);
+    const items = await prisma.shopItem.findMany({
+      where: { id: { in: itemIds } },
+      select: { id: true, name: true, category: true },
+    });
+    const itemMap = Object.fromEntries(items.map(i => [i.id, i]));
+
+    // 销售统计 - 按货币类型
+    const revenue = await prisma.shopOrder.aggregate({
+      _sum: {
+        bonesSpent: true,
+        fishSpent: true,
+        gemsSpent: true,
+        heartsSpent: true,
+        starsSpent: true,
+      },
+      where,
+    });
+
+    // 销售统计 - 按用户
+    const salesByUser = await prisma.shopOrder.groupBy({
+      by: ['userId'],
+      _count: true,
+      _sum: {
+        bonesSpent: true,
+        fishSpent: true,
+        gemsSpent: true,
+        heartsSpent: true,
+        starsSpent: true,
+      },
+      where,
+      orderBy: {
+        _count: {
+          id: 'desc',
+        },
+      },
+      take: 10,
+    }).catch(() => []) as any[];
+
+    // 获取用户信息
+    const userIds = salesByUser.map(s => s.userId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true, nickname: true, role: true },
+    });
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+    // 今日销售
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayOrders = await prisma.shopOrder.count({
+      where: { createdAt: { gte: today } },
+    });
+
+    const todayRevenue = await prisma.shopOrder.aggregate({
+      _sum: {
+        bonesSpent: true,
+        fishSpent: true,
+        gemsSpent: true,
+        heartsSpent: true,
+        starsSpent: true,
+      },
+      where: { createdAt: { gte: today } },
+    });
+
+    // 热销商品 Top 10
+    const topItems = salesByItem.map(s => ({
+      item: itemMap[s.itemId] || { name: '未知商品', category: 'unknown' },
+      count: s._count,
+      revenue: {
+        bones: s._sum.bonesSpent || 0,
+        fish: s._sum.fishSpent || 0,
+        gems: s._sum.gemsSpent || 0,
+        hearts: s._sum.heartsSpent || 0,
+        stars: s._sum.starsSpent || 0,
+      },
+    }));
+
+    // 消费达人 Top 10
+    const topUsers = salesByUser.map(s => ({
+      user: userMap[s.userId] || { username: '未知用户', role: 'unknown' },
+      count: s._count,
+      revenue: {
+        bones: s._sum.bonesSpent || 0,
+        fish: s._sum.fishSpent || 0,
+        gems: s._sum.gemsSpent || 0,
+        hearts: s._sum.heartsSpent || 0,
+        stars: s._sum.starsSpent || 0,
+      },
+    }));
 
     res.json({
       success: true,
@@ -569,8 +691,15 @@ router.get('/admin/stats', authenticate, authorize('ADMIN'), async (req: AuthReq
         },
         orders: {
           total: totalOrders,
+          today: todayOrders,
           byStatus: orderStats || [],
         },
+        revenue: {
+          total: revenue._sum,
+          today: todayRevenue._sum,
+        },
+        topItems,
+        topUsers,
       },
     });
   } catch (error: any) {
