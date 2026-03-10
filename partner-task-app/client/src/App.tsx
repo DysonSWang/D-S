@@ -41,6 +41,9 @@ import AdminSalesStats from './pages/admin/SalesStats';
 import AdminTasks from './pages/admin/Tasks';
 import AdminTaskTemplates from './pages/admin/TaskTemplates';
 
+// SSO
+import SSOLogin from './pages/SSOLogin';
+
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) => {
   const { user, isAuthenticated } = useAuthStore();
@@ -63,6 +66,7 @@ function App() {
         {/* Public Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
+          <Route path="/sso-login" element={<SSOLogin />} />
           <Route path="/register" element={<Register />} />
         </Route>
 

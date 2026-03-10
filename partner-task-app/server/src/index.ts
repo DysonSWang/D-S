@@ -133,6 +133,10 @@ app.use('/api/certificates', certificateRoutes);
 import calendarRoutes from './routes/calendar';
 app.use('/api/calendar', calendarRoutes);
 
+// Import SSO routes (single sign-on)
+import ssoRoutes from './routes/sso';
+app.use('/api/sso', ssoRoutes);
+
 // Import debug routes (for testing)
 import debugRoutes from './routes/debug-test';
 app.use('/api/debug', debugRoutes);

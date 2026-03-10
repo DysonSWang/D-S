@@ -11,6 +11,8 @@ export interface AuthRequest extends Request {
     username: string;
     role: string;
     nickname?: string;
+    roles?: string[]; // SSO: 所有可访问角色
+    currentRole?: string; // SSO: 当前角色
   };
 }
 
@@ -36,20 +38,26 @@ export const authenticate = async (
       userId: number;
       username: string;
       role: string;
+      roles?: string[]; // SSO
+      currentRole?: string; // SSO
     };
 
     // Check if user still exists and is active
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, username: true, role: true, status: true },
+      select: { id: true, username: true, role: true, status: true, nickname: true },
     });
 
-    if (!user || user.status !== 1) {
+    if (!user || user.status !== 'ACTIVE') {
       throw new UnauthorizedError('User not found or disabled');
     }
 
-    // Attach user to request
-    req.user = user;
+    // Attach user to request (support SSO)
+    req.user = {
+      ...user,
+      roles: decoded.roles,
+      currentRole: decoded.currentRole || user.role,
+    };
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
