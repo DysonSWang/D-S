@@ -149,6 +149,43 @@ router.put('/:id/status', authenticate, authorize('ADMIN'), async (req: AuthRequ
 });
 
 /**
+ * GET /api/users/me
+ * 获取当前用户信息
+ */
+router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        username: true,
+        nickname: true,
+        email: true,
+        phone: true,
+        role: true,
+        avatarUrl: true,
+        ageVerified: true,
+        timezone: true,
+        taskPreferences: true,
+        rewardPreferences: true,
+        suggestionStyle: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    res.json({
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * DELETE /api/users/:id
  * 删除用户（管理员）
  */
