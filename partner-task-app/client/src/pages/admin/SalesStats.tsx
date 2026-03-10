@@ -59,24 +59,12 @@ interface SalesStats {
   topItems: {
     item: { name: string; category: string };
     count: number;
-    revenue: {
-      bones: number;
-      fish: number;
-      gems: number;
-      hearts: number;
-      stars: number;
-    };
+    totalRevenue: number;
   }[];
   topUsers: {
     user: { username: string; nickname?: string; role: string };
     count: number;
-    revenue: {
-      bones: number;
-      fish: number;
-      gems: number;
-      hearts: number;
-      stars: number;
-    };
+    totalSpent: number;
   }[];
 }
 
@@ -239,8 +227,7 @@ const SalesStats: React.FC = () => {
                     <Th>商品名称</Th>
                     <Th>分类</Th>
                     <Th>销量</Th>
-                    <Th>骨头收入</Th>
-                    <Th>宝石收入</Th>
+                    <Th>总收入</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
@@ -258,8 +245,7 @@ const SalesStats: React.FC = () => {
                         </Badge>
                       </Td>
                       <Td>{item.count}</Td>
-                      <Td>{item.revenue.bones}</Td>
-                      <Td>{item.revenue.gems}</Td>
+                      <Td>{item.totalRevenue}</Td>
                     </Tr>
                   ))}
                 </Tbody>
@@ -276,8 +262,7 @@ const SalesStats: React.FC = () => {
                     <Th>用户</Th>
                     <Th>角色</Th>
                     <Th>订单数</Th>
-                    <Th>总消费 (骨头)</Th>
-                    <Th>总消费 (宝石)</Th>
+                    <Th>总消费</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
@@ -295,8 +280,7 @@ const SalesStats: React.FC = () => {
                         </Badge>
                       </Td>
                       <Td>{user.count}</Td>
-                      <Td>{user.revenue.bones}</Td>
-                      <Td>{user.revenue.gems}</Td>
+                      <Td>{user.totalSpent}</Td>
                     </Tr>
                   ))}
                 </Tbody>

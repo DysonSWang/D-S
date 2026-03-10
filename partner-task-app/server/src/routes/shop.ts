@@ -569,16 +569,12 @@ router.get('/admin/stats', authenticate, authorize('ADMIN'), async (req: AuthReq
 
     const totalOrders = await prisma.shopOrder.count({ where });
 
-    // 销售统计 - 按商品
+    // 销售统计 - 按商品（简化版，只统计数量和总额）
     const salesByItem = await prisma.shopOrder.groupBy({
       by: ['itemId'],
       _count: true,
       _sum: {
-        bonesSpent: true,
-        fishSpent: true,
-        gemsSpent: true,
-        heartsSpent: true,
-        starsSpent: true,
+        totalPrice: true,
       },
       where,
       orderBy: {
@@ -597,28 +593,31 @@ router.get('/admin/stats', authenticate, authorize('ADMIN'), async (req: AuthReq
     });
     const itemMap = Object.fromEntries(items.map(i => [i.id, i]));
 
-    // 销售统计 - 按货币类型
-    const revenue = await prisma.shopOrder.aggregate({
-      _sum: {
-        bonesSpent: true,
-        fishSpent: true,
-        gemsSpent: true,
-        heartsSpent: true,
-        starsSpent: true,
-      },
+    // 销售统计 - 按货币类型（从 totalPrice 和 priceType 计算）
+    const allOrders = await prisma.shopOrder.findMany({
       where,
+      select: {
+        totalPrice: true,
+        priceType: true,
+      },
     });
+
+    const revenue = {
+      _sum: {
+        bonesSpent: allOrders.filter(o => o.priceType === 'BONES').reduce((sum, o) => sum + o.totalPrice, 0),
+        fishSpent: allOrders.filter(o => o.priceType === 'FISH').reduce((sum, o) => sum + o.totalPrice, 0),
+        gemsSpent: allOrders.filter(o => o.priceType === 'GEMS').reduce((sum, o) => sum + o.totalPrice, 0),
+        heartsSpent: allOrders.filter(o => o.priceType === 'HEARTS').reduce((sum, o) => sum + o.totalPrice, 0),
+        starsSpent: allOrders.filter(o => o.priceType === 'STARS').reduce((sum, o) => sum + o.totalPrice, 0),
+      },
+    };
 
     // 销售统计 - 按用户
     const salesByUser = await prisma.shopOrder.groupBy({
       by: ['userId'],
       _count: true,
       _sum: {
-        bonesSpent: true,
-        fishSpent: true,
-        gemsSpent: true,
-        heartsSpent: true,
-        starsSpent: true,
+        totalPrice: true,
       },
       where,
       orderBy: {
@@ -644,41 +643,36 @@ router.get('/admin/stats', authenticate, authorize('ADMIN'), async (req: AuthReq
       where: { createdAt: { gte: today } },
     });
 
-    const todayRevenue = await prisma.shopOrder.aggregate({
-      _sum: {
-        bonesSpent: true,
-        fishSpent: true,
-        gemsSpent: true,
-        heartsSpent: true,
-        starsSpent: true,
-      },
+    const todayOrdersList = await prisma.shopOrder.findMany({
       where: { createdAt: { gte: today } },
+      select: {
+        totalPrice: true,
+        priceType: true,
+      },
     });
+
+    const todayRevenue = {
+      _sum: {
+        bonesSpent: todayOrdersList.filter(o => o.priceType === 'BONES').reduce((sum, o) => sum + o.totalPrice, 0),
+        fishSpent: todayOrdersList.filter(o => o.priceType === 'FISH').reduce((sum, o) => sum + o.totalPrice, 0),
+        gemsSpent: todayOrdersList.filter(o => o.priceType === 'GEMS').reduce((sum, o) => sum + o.totalPrice, 0),
+        heartsSpent: todayOrdersList.filter(o => o.priceType === 'HEARTS').reduce((sum, o) => sum + o.totalPrice, 0),
+        starsSpent: todayOrdersList.filter(o => o.priceType === 'STARS').reduce((sum, o) => sum + o.totalPrice, 0),
+      },
+    };
 
     // 热销商品 Top 10
     const topItems = salesByItem.map(s => ({
       item: itemMap[s.itemId] || { name: '未知商品', category: 'unknown' },
       count: s._count,
-      revenue: {
-        bones: s._sum.bonesSpent || 0,
-        fish: s._sum.fishSpent || 0,
-        gems: s._sum.gemsSpent || 0,
-        hearts: s._sum.heartsSpent || 0,
-        stars: s._sum.starsSpent || 0,
-      },
+      totalRevenue: s._sum.totalPrice || 0,
     }));
 
     // 消费达人 Top 10
     const topUsers = salesByUser.map(s => ({
       user: userMap[s.userId] || { username: '未知用户', role: 'unknown' },
       count: s._count,
-      revenue: {
-        bones: s._sum.bonesSpent || 0,
-        fish: s._sum.fishSpent || 0,
-        gems: s._sum.gemsSpent || 0,
-        hearts: s._sum.heartsSpent || 0,
-        stars: s._sum.starsSpent || 0,
-      },
+      totalSpent: s._sum.totalPrice || 0,
     }));
 
     res.json({
