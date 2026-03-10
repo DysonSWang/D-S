@@ -6,6 +6,7 @@ import {
   SafetyCertificateOutlined,
   ShopOutlined,
   BarChartOutlined,
+  CheckSquareOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
@@ -41,6 +42,16 @@ const AdminLayout = () => {
       key: '/admin/sales-stats',
       icon: <BarChartOutlined />,
       label: '销售统计',
+    },
+    {
+      key: '/admin/tasks',
+      icon: <CheckSquareOutlined />,
+      label: '任务管理',
+    },
+    {
+      key: '/admin/task-templates',
+      icon: <CheckSquareOutlined />,
+      label: '任务模板',
     },
   ];
 

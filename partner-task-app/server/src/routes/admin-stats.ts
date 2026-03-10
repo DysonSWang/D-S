@@ -109,6 +109,23 @@ router.get('/tasks', authenticate, authorize('ADMIN'), async (req: AuthRequest, 
       prisma.task.count({ where }),
     ]);
 
+    res.json({
+      tasks,
+      total,
+    });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/admin/tasks/stats
+ * 任务统计详情
+ */
+router.get('/tasks/stats', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    const total = await prisma.task.count();
+
     // 状态统计
     const statusStats = await prisma.task.groupBy({
       by: ['status'],
@@ -122,9 +139,8 @@ router.get('/tasks', authenticate, authorize('ADMIN'), async (req: AuthRequest, 
     });
 
     res.json({
-      tasks,
-      total,
       stats: {
+        total,
         byStatus: statusStats,
         byType: typeStats,
       },

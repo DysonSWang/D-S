@@ -38,6 +38,8 @@ import AdminUsers from './pages/admin/Users';
 import AdminContent from './pages/admin/Content';
 import AdminShop from './pages/admin/Shop';
 import AdminSalesStats from './pages/admin/SalesStats';
+import AdminTasks from './pages/admin/Tasks';
+import AdminTaskTemplates from './pages/admin/TaskTemplates';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) => {
@@ -120,6 +122,8 @@ function App() {
           <Route path="content" element={<AdminContent />} />
           <Route path="shop" element={<AdminShop />} />
           <Route path="sales-stats" element={<AdminSalesStats />} />
+          <Route path="tasks" element={<AdminTasks />} />
+          <Route path="task-templates" element={<AdminTaskTemplates />} />
         </Route>
 
         {/* Root Redirect */}
