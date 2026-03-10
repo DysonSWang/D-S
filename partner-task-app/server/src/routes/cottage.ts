@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../middleware/errorHandler';
+import { checkAndUnlockAchievements } from '../services/achievementService';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // 小屋等级配置
 const COTTAGE_LEVEL_CONFIG = [
@@ -179,6 +179,13 @@ router.post('/decorate', authenticate, async (req: AuthRequest, res, next) => {
           experience: { increment: warmthBonus * 10 },
         },
       });
+
+      // 触发成就检查（装饰成就）
+      await checkAndUnlockAchievements(userId, 'decoration_equipped', {
+        decorationId: userDecoration.decoration.id,
+        decorationName: userDecoration.decoration.name,
+        slotType: userDecoration.decoration.slotType,
+      });
     } else {
       // 卸下装饰，减少温暖度
       const warmthBonus = userDecoration.decoration.warmthBonus || 0;
@@ -266,6 +273,13 @@ router.post('/upgrade', authenticate, async (req: AuthRequest, res, next) => {
         level: cottage.level + 1,
         experience: cottage.experience - expNeeded,
       },
+    });
+
+    // 触发成就检查（小屋升级成就）
+    await checkAndUnlockAchievements(userId, 'cottage_upgraded', {
+      cottageId: cottage.id,
+      newLevel: cottage.level + 1,
+      previousLevel: cottage.level,
     });
 
     res.json({

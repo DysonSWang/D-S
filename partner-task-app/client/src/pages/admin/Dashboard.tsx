@@ -5,7 +5,7 @@ import {
   SafetyCertificateOutlined,
   BlockOutlined,
   TeamOutlined,
-  TaskOutlined,
+  CheckSquareOutlined,
 } from '@ant-design/icons';
 import api from '@/api/request';
 
@@ -113,7 +113,7 @@ const AdminDashboard = () => {
 
       <Row gutter={16} style={{ marginTop: 16 }}>
         <Col span={12}>
-          <Card title={<Space><TaskOutlined />任务统计</Space>}>
+          <Card title={<Space><CheckSquareOutlined />任务统计</Space>}>
             <Row gutter={16}>
               <Col span={12}>
                 <Statistic

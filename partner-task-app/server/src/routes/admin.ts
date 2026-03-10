@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../middleware/errorHandler';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * GET /api/admin/stats

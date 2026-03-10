@@ -1,9 +1,11 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Space } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Space, Drawer } from 'antd';
+import { MenuOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
 import {
   DashboardOutlined,
   TeamOutlined,
-  TaskOutlined,
+  CheckSquareOutlined,
   CheckCircleOutlined,
   UserOutlined,
   LogoutOutlined,
@@ -15,6 +17,17 @@ const { Header, Sider, Content } = Layout;
 const GuideLayout = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const menuItems = [
     {
@@ -29,7 +42,7 @@ const GuideLayout = () => {
     },
     {
       key: '/guide/tasks',
-      icon: <TaskOutlined />,
+      icon: <CheckSquareOutlined />,
       label: '任务管理',
     },
     {
@@ -58,26 +71,69 @@ const GuideLayout = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider width={200} theme="dark">
-        <div style={styles.logo}>伙伴任务系统</div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[window.location.pathname]}
-          items={menuItems}
-          onClick={handleMenuClick}
-        />
-      </Sider>
-      <Layout>
-        <Header style={styles.header}>
+      {/* 桌面端侧边栏 */}
+      {!isMobile && (
+        <Sider width={200} theme="dark">
+          <div style={styles.logo}>伙伴任务系统</div>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[window.location.pathname]}
+            items={menuItems}
+            onClick={handleMenuClick}
+          />
+        </Sider>
+      )}
+
+      {/* 移动端顶部导航 */}
+      {isMobile && (
+        <Header style={{ ...styles.header, padding: '0 12px' }}>
+          <MenuOutlined
+            style={{ fontSize: 20, cursor: 'pointer' }}
+            onClick={() => setMobileMenuOpen(true)}
+          />
           <div style={styles.headerLeft}>引导者端</div>
           <Dropdown overlay={userMenu} trigger={['click']}>
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar icon={<UserOutlined />} />
-              <span>{user?.nickname || user?.username}</span>
+              <Avatar size="small" icon={<UserOutlined />} />
             </Space>
           </Dropdown>
         </Header>
+      )}
+
+      {/* 移动端抽屉菜单 */}
+      {isMobile && (
+        <Drawer
+          placement="left"
+          open={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          width={280}
+        >
+          <div style={{ marginBottom: 16, fontSize: 18, fontWeight: 'bold' }}>伙伴任务系统</div>
+          <Menu
+            mode="vertical"
+            selectedKeys={[window.location.pathname]}
+            items={menuItems}
+            onClick={(e) => {
+              handleMenuClick(e);
+              setMobileMenuOpen(false);
+            }}
+          />
+        </Drawer>
+      )}
+
+      <Layout>
+        {!isMobile && (
+          <Header style={styles.header}>
+            <div style={styles.headerLeft}>引导者端</div>
+            <Dropdown overlay={userMenu} trigger={['click']}>
+              <Space style={{ cursor: 'pointer' }}>
+                <Avatar icon={<UserOutlined />} />
+                <span>{user?.nickname || user?.username}</span>
+              </Space>
+            </Dropdown>
+          </Header>
+        )}
         <Content style={styles.content}>
           <Outlet />
         </Content>

@@ -42,6 +42,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class InsufficientFundsError extends AppError {
+  constructor(message = 'Insufficient funds') {
+    super(message, 400);
+  }
+}
+
 export const errorHandler = (
   err: Error | AppError,
   req: Request,

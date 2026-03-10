@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 interface User {
   id: number;
@@ -21,37 +20,31 @@ interface AuthState {
   updateUser: (user: Partial<User>) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+// 临时禁用 persist 中间件，排查空白页问题
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  token: null,
+  isAuthenticated: false,
+
+  login: (user, token) => {
+    set({
+      user,
+      token,
+      isAuthenticated: true,
+    });
+  },
+
+  logout: () => {
+    set({
       user: null,
       token: null,
       isAuthenticated: false,
+    });
+  },
 
-      login: (user, token) => {
-        set({
-          user,
-          token,
-          isAuthenticated: true,
-        });
-      },
-
-      logout: () => {
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-        });
-      },
-
-      updateUser: (userData) => {
-        set((state) => ({
-          user: state.user ? { ...state.user, ...userData } : null,
-        }));
-      },
-    }),
-    {
-      name: 'auth-storage',
-    }
-  )
-);
+  updateUser: (userData) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...userData } : null,
+    }));
+  },
+}));

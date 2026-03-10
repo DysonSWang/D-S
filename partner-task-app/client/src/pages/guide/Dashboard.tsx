@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, Row, Col, Statistic, Table, Tag, Button, Space } from 'antd';
 import {
   TeamOutlined,
-  TaskOutlined,
+  CheckSquareOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
@@ -97,7 +97,7 @@ const GuideDashboard = () => {
             <Statistic
               title="任务总数"
               value={stats.totalTasks}
-              prefix={<TaskOutlined />}
+              prefix={<CheckSquareOutlined />}
               valueStyle={{ color: '#722ed1' }}
             />
           </Card>

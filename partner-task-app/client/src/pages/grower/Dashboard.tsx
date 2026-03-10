@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, Row, Col, Statistic, Table, Tag, Button, Progress } from 'antd';
 import {
-  TaskOutlined,
+  CheckSquareOutlined,
   TrophyOutlined,
   HomeOutlined,
   ClockCircleOutlined,
@@ -94,7 +94,7 @@ const GrowerDashboard = () => {
             <Statistic
               title="进行中任务"
               value={stats.activeTasks}
-              prefix={<TaskOutlined />}
+              prefix={<CheckSquareOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>

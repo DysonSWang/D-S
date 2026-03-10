@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Tag, Button, Space, Modal, Form, Input, Select, message, Card } from 'antd';
-import { TaskOutlined, PlusOutlined } from '@ant-design/icons';
+import { CheckSquareOutlined, PlusOutlined } from '@ant-design/icons';
 import api from '@/api/request';
 
 const { TextArea } = Input;
@@ -93,7 +93,7 @@ const GuideTasks = () => {
   return (
     <div>
       <Card
-        title={<Space><TaskOutlined />任务管理</Space>}
+        title={<Space><CheckSquareOutlined />任务管理</Space>}
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalVisible(true)}>
             发布任务

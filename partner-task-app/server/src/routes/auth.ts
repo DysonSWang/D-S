@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { authLimiter } from '../middleware/rateLimiter';
 import { generateToken, authenticate, AuthRequest } from '../middleware/auth';
 import { BadRequestError, ConflictError, UnauthorizedError } from '../middleware/errorHandler';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * POST /api/auth/register

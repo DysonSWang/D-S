@@ -27,6 +27,12 @@ model User {
   safetyWordYellow String?
   safetyWordRed   String?
   ageVerified     Boolean  @default(false)
+  // 偏好设置
+  taskPreferences String   @default("{}") // JSON: {communication, action, reflection, social, creative}
+  rewardPreferences String @default("{\"preferred\":\"bones\"}") // JSON: {preferred}
+  suggestionStyle String   @default("gentle") // gentle/direct/humorous
+  availableTimeSlots String @default("[]") // JSON: [{start, end, days}]
+  boundaries      String   @default("[]") // JSON: [{type, description}]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -170,6 +176,54 @@ model RewardTransaction {
 
   @@index([rewardId])
   @@index([type])
+}
+
+// ==================== 奖励商店 ====================
+
+/// 商店商品表
+model ShopItem {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  imageUrl    String?
+  category    String   @default("DECORATION") // DECORATION/EFFECT/PRIVILEGE/PHYSICAL
+  priceType   String   @default("BONES") // BONES/FISH/GEMS/HEARTS/STARS
+  price       Int
+  stock       Int      @default(-1) // -1 表示无限库存
+  limitPerUser Int     @default(1) // 每人限购数量
+  itemType    String   @default("DECORATION") // DECORATION/EFFECT/COUPON/PHYSICAL
+  itemConfig  String?  // JSON: {decorationId, effectType, couponValue, etc.}
+  isActive    Boolean  @default(true)
+  sort        Int      @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      ShopOrder[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([sort])
+}
+
+/// 商店订单表
+model ShopOrder {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  itemId      Int
+  item        ShopItem @relation(fields: [itemId], references: [id])
+  quantity    Int      @default(1)
+  totalPrice  Int
+  priceType   String
+  status      String   @default("COMPLETED") // PENDING/COMPLETED/SHIPPED/DELIVERED/CANCELLED
+  deliveryData String? // JSON: 发货数据（虚拟物品信息/物流单号等）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([itemId])
+  @@index([status])
 }
 
 // ==================== 装饰系统 ====================

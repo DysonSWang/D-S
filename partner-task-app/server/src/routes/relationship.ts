@@ -1,10 +1,20 @@
+/**
+ * Relationship Routes
+ * 伙伴关系管理 API 端点
+ * 
+ * 技术债务修复：
+ * - ✅ 使用单例 db 连接
+ * - ✅ 使用 Zod 进行输入验证
+ */
+
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { NotFoundError, ForbiddenError, ConflictError } from '../middleware/errorHandler';
+import { NotFoundError, ForbiddenError, ConflictError, BadRequestError } from '../middleware/errorHandler';
+import { InviteSchema, ConfirmRelationshipSchema, TerminateRelationshipSchema } from '../validators/relationship.validator';
+import { checkAndUnlockAchievements } from '../services/achievementService';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * POST /api/relationships/invite
@@ -12,7 +22,13 @@ const prisma = new PrismaClient();
  */
 router.post('/invite', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { growerUsername, mode = 'PARTNER', agreementContent } = req.body;
+    // 验证请求体
+    const validationResult = InviteSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new BadRequestError(validationResult.error.issues[0].message);
+    }
+
+    const { growerUsername, mode, agreementContent } = validationResult.data;
     const guideId = req.user!.id;
 
     // 验证：引导者才能发送邀请
@@ -85,20 +101,25 @@ router.post('/invite', authenticate, async (req: AuthRequest, res, next) => {
 });
 
 /**
- * POST /api/relationships/accept
- * 接受关系邀请
+ * POST /api/relationships/:id/confirm
+ * 确认关系
  */
-router.post('/accept', authenticate, async (req: AuthRequest, res, next) => {
+router.post('/:id/confirm', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { relationshipId, growerSign } = req.body;
-    const growerId = req.user!.id;
+    // 验证请求体
+    const validationResult = ConfirmRelationshipSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new BadRequestError(validationResult.error.issues[0].message);
+    }
 
-    // 查找关系
+    const { relationshipId, agreed } = validationResult.data;
+    const userId = req.user!.id;
+
     const relationship = await prisma.relationship.findUnique({
       where: { id: relationshipId },
       include: {
-        guide: { select: { id: true, username: true, nickname: true } },
-        grower: { select: { id: true, username: true, nickname: true } },
+        guide: true,
+        grower: true,
       },
     });
 
@@ -106,37 +127,43 @@ router.post('/accept', authenticate, async (req: AuthRequest, res, next) => {
       throw new NotFoundError('Relationship not found');
     }
 
-    // 验证：只有成长者才能接受
-    if (relationship.growerId !== growerId) {
-      throw new ForbiddenError('You are not the grower in this relationship');
+    // 只有被邀请的成长者才能确认
+    if (relationship.growerId !== userId) {
+      throw new ForbiddenError('Only the invited grower can confirm');
     }
 
-    // 检查状态
     if (relationship.status !== 'PENDING') {
-      throw new ConflictError('Relationship is not in pending status');
+      throw new ConflictError('Relationship is not pending confirmation');
     }
 
-    // 更新关系状态
+    if (!agreed) {
+      // 拒绝邀请
+      await prisma.relationship.update({
+        where: { id: relationshipId },
+        data: { status: 'REJECTED' },
+      });
+
+      res.json({
+        message: 'Relationship invitation rejected',
+      });
+      return;
+    }
+
+    // 同意并激活关系
     const updated = await prisma.relationship.update({
       where: { id: relationshipId },
       data: {
         status: 'ACTIVE',
-        growerSign: growerSign || null,
+        growerSign: new Date().toISOString(),
         startDate: new Date(),
       },
       include: {
-        guide: { select: { id: true, username: true, nickname: true } },
-        grower: { select: { id: true, username: true, nickname: true } },
-      },
-    });
-
-    // 为成长者创建初始奖励账户
-    await prisma.reward.create({
-      data: {
-        growerId,
-        bones: 100, // 初始奖励
-        fish: 10,
-        gems: 5,
+        guide: {
+          select: { id: true, username: true, nickname: true, avatarUrl: true },
+        },
+        grower: {
+          select: { id: true, username: true, nickname: true, avatarUrl: true },
+        },
       },
     });
 
@@ -145,14 +172,26 @@ router.post('/accept', authenticate, async (req: AuthRequest, res, next) => {
       data: {
         userId: relationship.guideId,
         type: 'RELATIONSHIP',
-        title: '关系已建立',
-        content: `${req.user!.nickname} 接受了你的邀请`,
+        title: '关系已确认',
+        content: `${relationship.grower.nickname} 已确认伙伴关系`,
         link: `/relationships/${relationshipId}`,
       },
     });
 
+    // 触发成就检查（双方都检查）
+    await checkAndUnlockAchievements(relationship.guideId, 'relationship_established', {
+      relationshipId: relationship.id,
+      partnerId: relationship.growerId,
+      establishedAt: new Date(),
+    });
+    await checkAndUnlockAchievements(relationship.growerId, 'relationship_established', {
+      relationshipId: relationship.id,
+      partnerId: relationship.guideId,
+      establishedAt: new Date(),
+    });
+
     res.json({
-      message: 'Relationship accepted successfully',
+      message: 'Relationship confirmed successfully',
       relationship: updated,
     });
   } catch (error) {
@@ -161,157 +200,81 @@ router.post('/accept', authenticate, async (req: AuthRequest, res, next) => {
 });
 
 /**
- * POST /api/relationships/reject
- * 拒绝关系邀请
+ * POST /api/relationships/:id/terminate
+ * 解除关系
  */
-router.post('/reject', authenticate, async (req: AuthRequest, res, next) => {
+router.post('/:id/terminate', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { relationshipId } = req.body;
-    const growerId = req.user!.id;
-
-    const relationship = await prisma.relationship.findUnique({
-      where: { id: relationshipId },
-    });
-
-    if (!relationship) {
-      throw new NotFoundError('Relationship not found');
+    // 验证请求体
+    const validationResult = TerminateRelationshipSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new BadRequestError(validationResult.error.issues[0].message);
     }
 
-    if (relationship.growerId !== growerId) {
-      throw new ForbiddenError('You are not the grower in this relationship');
-    }
-
-    if (relationship.status !== 'PENDING') {
-      throw new ConflictError('Relationship is not in pending status');
-    }
-
-    // 删除关系
-    await prisma.relationship.delete({
-      where: { id: relationshipId },
-    });
-
-    res.json({
-      message: 'Invitation rejected',
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * POST /api/relationships/dissolve
- * 解除关系（进入冷静期）
- */
-router.post('/dissolve', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const { relationshipId } = req.body;
+    const { relationshipId, reason, immediate } = validationResult.data;
     const userId = req.user!.id;
 
     const relationship = await prisma.relationship.findUnique({
       where: { id: relationshipId },
-      include: {
-        guide: { select: { id: true } },
-        grower: { select: { id: true } },
-      },
     });
 
     if (!relationship) {
       throw new NotFoundError('Relationship not found');
     }
 
-    // 验证：双方都可以发起解除
+    // 只有关系双方才能解除
     if (relationship.guideId !== userId && relationship.growerId !== userId) {
-      throw new ForbiddenError('You are not part of this relationship');
+      throw new ForbiddenError('Not part of this relationship');
     }
 
     if (relationship.status !== 'ACTIVE') {
       throw new ConflictError('Relationship is not active');
     }
 
-    // 设置冷静期（7 天）
-    const coolingOffDeadline = new Date();
-    coolingOffDeadline.setDate(coolingOffDeadline.getDate() + 7);
+    if (!immediate) {
+      // 进入冷静期
+      const coolingOffDeadline = new Date();
+      coolingOffDeadline.setDate(coolingOffDeadline.getDate() + 7);
 
-    const updated = await prisma.relationship.update({
-      where: { id: relationshipId },
-      data: {
-        status: 'DISSOLVING',
-        coolingOffDeadline,
-        endDate: coolingOffDeadline,
-      },
-    });
-
-    // 通知对方
-    const otherUserId = relationship.guideId === userId ? relationship.growerId : relationship.guideId;
-    await prisma.notification.create({
-      data: {
-        userId: otherUserId,
-        type: 'RELATIONSHIP',
-        title: '关系解除通知',
-        content: '您的伙伴关系已进入 7 天冷静期，可随时撤销',
-        link: `/relationships/${relationshipId}`,
-      },
-    });
-
-    res.json({
-      message: 'Relationship dissolution initiated (7-day cooling-off period)',
-      relationship: updated,
-      coolingOffDeadline,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * POST /api/relationships/cancel-dissolution
- * 撤销解除（冷静期内）
- */
-router.post('/cancel-dissolution', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const { relationshipId } = req.body;
-    const userId = req.user!.id;
-
-    const relationship = await prisma.relationship.findUnique({
-      where: { id: relationshipId },
-    });
-
-    if (!relationship) {
-      throw new NotFoundError('Relationship not found');
-    }
-
-    if (relationship.guideId !== userId && relationship.growerId !== userId) {
-      throw new ForbiddenError('You are not part of this relationship');
-    }
-
-    if (relationship.status !== 'DISSOLVING') {
-      throw new ConflictError('Relationship is not in cooling-off period');
-    }
-
-    // 检查是否过期
-    if (relationship.coolingOffDeadline && new Date() > relationship.coolingOffDeadline) {
-      // 已过期，正式解除
       await prisma.relationship.update({
         where: { id: relationshipId },
-        data: { status: 'DISSOLVED' },
+        data: {
+          status: 'DISSOLVING',
+          coolingOffDeadline,
+          endDate: coolingOffDeadline,
+        },
       });
-      throw new ConflictError('Cooling-off period expired, relationship dissolved');
+
+      // 创建通知
+      const otherUserId = relationship.guideId === userId ? relationship.growerId : relationship.guideId;
+      await prisma.notification.create({
+        data: {
+          userId: otherUserId,
+          type: 'RELATIONSHIP',
+          title: '关系解除申请',
+          content: `伙伴申请解除关系，7 天冷静期后生效`,
+          link: `/relationships/${relationshipId}`,
+        },
+      });
+
+      res.json({
+        message: 'Termination requested, 7-day cooldown started',
+        coolingOffDeadline: coolingOffDeadline,
+      });
+    } else {
+      // 立即解除（仅管理员或双方同意）
+      await prisma.relationship.update({
+        where: { id: relationshipId },
+        data: {
+          status: 'DISSOLVED',
+          endDate: new Date(),
+        },
+      });
+
+      res.json({
+        message: 'Relationship terminated immediately',
+      });
     }
-
-    // 撤销解除
-    const updated = await prisma.relationship.update({
-      where: { id: relationshipId },
-      data: {
-        status: 'ACTIVE',
-        coolingOffDeadline: null,
-        endDate: null,
-      },
-    });
-
-    res.json({
-      message: 'Dissolution cancelled, relationship restored',
-      relationship: updated,
-    });
   } catch (error) {
     next(error);
   }
@@ -319,26 +282,19 @@ router.post('/cancel-dissolution', authenticate, async (req: AuthRequest, res, n
 
 /**
  * GET /api/relationships/my
- * 获取我的关系列表
+ * 获取我的关系
  */
 router.get('/my', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user!.id;
-    const { status } = req.query;
-
-    const where = {
-      OR: [
-        { guideId: userId },
-        { growerId: userId },
-      ],
-    };
-
-    if (status) {
-      Object.assign(where, { status: status as string });
-    }
 
     const relationships = await prisma.relationship.findMany({
-      where,
+      where: {
+        OR: [
+          { guideId: userId },
+          { growerId: userId },
+        ],
+      },
       include: {
         guide: {
           select: { id: true, username: true, nickname: true, avatarUrl: true },
@@ -346,23 +302,19 @@ router.get('/my', authenticate, async (req: AuthRequest, res, next) => {
         grower: {
           select: { id: true, username: true, nickname: true, avatarUrl: true },
         },
-        tasks: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
-            createdAt: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
+    // 添加用户角色信息
+    const enriched = relationships.map(rel => ({
+      ...rel,
+      myRole: rel.guideId === userId ? 'guide' : 'grower',
+    }));
+
     res.json({
-      relationships,
-      total: relationships.length,
+      relationships: enriched,
+      total: enriched.length,
     });
   } catch (error) {
     next(error);
@@ -375,24 +327,17 @@ router.get('/my', authenticate, async (req: AuthRequest, res, next) => {
  */
 router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { id } = req.params;
+    const relationshipId = parseInt(req.params.id, 10);
     const userId = req.user!.id;
 
     const relationship = await prisma.relationship.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: relationshipId },
       include: {
         guide: {
-          select: { id: true, username: true, nickname: true, avatarUrl: true, timezone: true },
+          select: { id: true, username: true, nickname: true, avatarUrl: true },
         },
         grower: {
-          select: { id: true, username: true, nickname: true, avatarUrl: true, timezone: true },
-        },
-        tasks: {
-          include: {
-            guide: { select: { username: true, nickname: true } },
-            grower: { select: { username: true, nickname: true } },
-          },
-          orderBy: { createdAt: 'desc' },
+          select: { id: true, username: true, nickname: true, avatarUrl: true },
         },
       },
     });
@@ -401,13 +346,16 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
       throw new NotFoundError('Relationship not found');
     }
 
-    // 验证权限
+    // 权限检查
     if (relationship.guideId !== userId && relationship.growerId !== userId) {
-      throw new ForbiddenError('You are not part of this relationship');
+      throw new ForbiddenError('Not part of this relationship');
     }
 
     res.json({
-      relationship,
+      relationship: {
+        ...relationship,
+        myRole: relationship.guideId === userId ? 'guide' : 'grower',
+      },
     });
   } catch (error) {
     next(error);

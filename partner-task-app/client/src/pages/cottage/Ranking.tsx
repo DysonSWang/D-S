@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, Table, Tag, Space, Avatar, Row, Col, Statistic, TrophyOutlined } from 'antd';
-import { HomeOutlined, RiseOutlined } from '@ant-design/icons';
+import { Card, Table, Tag, Space, Avatar, Row, Col, Statistic } from 'antd';
+import { HomeOutlined, RiseOutlined, TrophyOutlined } from '@ant-design/icons';
 import api from '@/api/request';
 
 const Ranking = () => {

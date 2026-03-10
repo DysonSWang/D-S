@@ -1,10 +1,25 @@
-import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+/**
+ * Task Routes
+ * 任务相关 API 端点
+ * 
+ * 技术债务修复：
+ * - ✅ 使用单例 db 连接
+ * - ✅ 使用 Service 层处理业务逻辑
+ * - ✅ 使用 Zod 进行输入验证
+ */
+
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { NotFoundError, ForbiddenError, ConflictError, BadRequestError } from '../middleware/errorHandler';
+import { BadRequestError } from '../middleware/errorHandler';
+import * as taskService from '../services/taskService';
+import { 
+  CreateTaskSchema, 
+  SubmitTaskSchema, 
+  ReviewTaskSchema,
+  GetTasksQuerySchema 
+} from '../validators/task.validator';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * POST /api/tasks
@@ -12,72 +27,20 @@ const prisma = new PrismaClient();
  */
 router.post('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const {
-      relationshipId,
-      name,
-      description,
-      difficulty = 1,
-      proofType = 'TEXT',
-      rewardConfig,
-      deadline,
-      repeatType = 'NONE',
-      repeatConfig,
-    } = req.body;
+    // 验证请求体
+    const validationResult = CreateTaskSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new BadRequestError(validationResult.error.issues[0].message);
+    }
 
+    const validatedData = validationResult.data;
     const guideId = req.user!.id;
 
-    // 验证关系
-    const relationship = await prisma.relationship.findUnique({
-      where: { id: relationshipId },
-    });
-
-    if (!relationship) {
-      throw new NotFoundError('Relationship not found');
-    }
-
-    if (relationship.guideId !== guideId) {
-      throw new ForbiddenError('Only the guide can create tasks');
-    }
-
-    if (relationship.status !== 'ACTIVE') {
-      throw new ConflictError('Relationship is not active');
-    }
-
-    // 创建任务
-    const task = await prisma.task.create({
-      data: {
-        relationshipId,
-        guideId,
-        growerId: relationship.growerId,
-        name,
-        description,
-        difficulty,
-        proofType: proofType.toUpperCase(),
-        rewardConfig: rewardConfig ? JSON.stringify(rewardConfig) : null,
-        deadline: deadline ? new Date(deadline) : null,
-        repeatType: repeatType.toUpperCase(),
-        repeatConfig: repeatConfig ? JSON.stringify(repeatConfig) : null,
-        status: 'PENDING',
-      },
-      include: {
-        relationship: {
-          select: {
-            id: true,
-            mode: true,
-          },
-        },
-      },
-    });
-
-    // 创建通知
-    await prisma.notification.create({
-      data: {
-        userId: relationship.growerId,
-        type: 'TASK',
-        title: '新任务',
-        content: `${req.user!.nickname} 给你发布了新任务：${name}`,
-        link: `/tasks/${task.id}`,
-      },
+    // 调用 Service 层
+    const task = await taskService.createTask({
+      ...validatedData,
+      guideId,
+      deadline: validatedData.deadline ? new Date(validatedData.deadline as any) : undefined,
     });
 
     res.status(201).json({
@@ -95,36 +58,14 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
  */
 router.post('/:id/start', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { id } = req.params;
+    const taskId = parseInt(req.params.id, 10);
     const growerId = req.user!.id;
 
-    const task = await prisma.task.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!task) {
-      throw new NotFoundError('Task not found');
-    }
-
-    if (task.growerId !== growerId) {
-      throw new ForbiddenError('You are not the grower for this task');
-    }
-
-    if (task.status !== 'PENDING') {
-      throw new ConflictError('Task is not in pending status');
-    }
-
-    const updated = await prisma.task.update({
-      where: { id: parseInt(id) },
-      data: {
-        status: 'IN_PROGRESS',
-        startedAt: new Date(),
-      },
-    });
+    const task = await taskService.startTask(taskId, growerId);
 
     res.json({
       message: 'Task started',
-      task: updated,
+      task,
     });
   } catch (error) {
     next(error);
@@ -137,49 +78,26 @@ router.post('/:id/start', authenticate, async (req: AuthRequest, res, next) => {
  */
 router.post('/:id/submit', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { id } = req.params;
-    const { proofContent } = req.body;
+    const taskId = parseInt(req.params.id, 10);
+    
+    // 验证请求体
+    const validationResult = SubmitTaskSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new BadRequestError(validationResult.error.issues[0].message);
+    }
+
+    const validatedData = validationResult.data;
     const growerId = req.user!.id;
 
-    const task = await prisma.task.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!task) {
-      throw new NotFoundError('Task not found');
-    }
-
-    if (task.growerId !== growerId) {
-      throw new ForbiddenError('You are not the grower for this task');
-    }
-
-    if (task.status !== 'IN_PROGRESS') {
-      throw new ConflictError('Task is not in progress');
-    }
-
-    const updated = await prisma.task.update({
-      where: { id: parseInt(id) },
-      data: {
-        status: 'PENDING_REVIEW',
-        proofContent,
-        completedAt: new Date(),
-      },
-    });
-
-    // 创建通知
-    await prisma.notification.create({
-      data: {
-        userId: task.guideId,
-        type: 'TASK',
-        title: '任务待审核',
-        content: `${req.user!.nickname} 提交了任务：${task.name}`,
-        link: `/tasks/${id}/review`,
-      },
+    const task = await taskService.submitTask({
+      taskId,
+      growerId,
+      ...validatedData,
     });
 
     res.json({
       message: 'Task submitted for review',
-      task: updated,
+      task,
     });
   } catch (error) {
     next(error);
@@ -187,165 +105,31 @@ router.post('/:id/submit', authenticate, async (req: AuthRequest, res, next) => 
 });
 
 /**
- * POST /api/tasks/:id/approve
- * 审核通过
+ * POST /api/tasks/:id/review
+ * 审核任务
  */
-router.post('/:id/approve', authenticate, async (req: AuthRequest, res, next) => {
+router.post('/:id/review', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { id } = req.params;
-    const { auditComment, rewardOverride } = req.body;
+    const taskId = parseInt(req.params.id, 10);
+    const { approved } = req.body;
     const guideId = req.user!.id;
 
-    const task = await prisma.task.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        relationship: true,
-      },
-    });
-
-    if (!task) {
-      throw new NotFoundError('Task not found');
+    // 验证请求体
+    const validationResult = ReviewTaskSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new BadRequestError(validationResult.error.issues[0].message);
     }
 
-    if (task.guideId !== guideId) {
-      throw new ForbiddenError('Only the guide can approve tasks');
-    }
-
-    if (task.status !== 'PENDING_REVIEW') {
-      throw new ConflictError('Task is not pending review');
-    }
-
-    // 更新任务状态
-    const updated = await prisma.task.update({
-      where: { id: parseInt(id) },
-      data: {
-        status: 'COMPLETED',
-        auditedAt: new Date(),
-        auditedBy: guideId,
-        auditComment,
-      },
-    });
-
-    // 发放奖励
-    if (task.rewardConfig) {
-      const rewardConfig = JSON.parse(task.rewardConfig);
-      const rewardOverrideParsed = rewardOverride ? JSON.parse(rewardOverride) : null;
-
-      const rewardData = rewardOverrideParsed || rewardConfig;
-
-      await prisma.reward.upsert({
-        where: { growerId: task.growerId },
-        update: {
-          bones: { increment: rewardData.bones || 0 },
-          fish: { increment: rewardData.fish || 0 },
-          gems: { increment: rewardData.gems || 0 },
-          hearts: { increment: rewardData.hearts || 0 },
-          stars: { increment: rewardData.stars || 0 },
-        },
-        create: {
-          growerId: task.growerId,
-          bones: rewardData.bones || 10,
-          fish: rewardData.fish || 1,
-          gems: rewardData.gems || 0,
-          hearts: rewardData.hearts || 0,
-          stars: rewardData.stars || 0,
-        },
-      });
-
-      // 创建奖励流水
-      const reward = await prisma.reward.findUnique({
-        where: { growerId: task.growerId },
-      });
-
-      if (reward) {
-        const entries = Object.entries(rewardData).filter(([_, v]) => v > 0);
-        for (const [type, amount] of entries) {
-          await prisma.rewardTransaction.create({
-            data: {
-              rewardId: reward.id,
-              type: 'EARN',
-              amount: amount as number,
-              balance: (reward as any)[type.toLowerCase()] || 0,
-              reason: `Task completed: ${task.name}`,
-              taskId: task.id,
-            },
-          });
-        }
-      }
-    }
-
-    // 创建通知
-    await prisma.notification.create({
-      data: {
-        userId: task.growerId,
-        type: 'TASK',
-        title: '任务已通过',
-        content: `你的任务"${task.name}"已通过审核，奖励已发放`,
-        link: `/tasks/${id}`,
-      },
+    const task = await taskService.reviewTask({
+      taskId,
+      guideId,
+      approved,
+      feedback: validationResult.data.feedback,
     });
 
     res.json({
-      message: 'Task approved and rewards granted',
-      task: updated,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * POST /api/tasks/:id/reject
- * 审核拒绝
- */
-router.post('/:id/reject', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const { id } = req.params;
-    const { auditComment } = req.body;
-    const guideId = req.user!.id;
-
-    const task = await prisma.task.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!task) {
-      throw new NotFoundError('Task not found');
-    }
-
-    if (task.guideId !== guideId) {
-      throw new ForbiddenError('Only the guide can reject tasks');
-    }
-
-    if (task.status !== 'PENDING_REVIEW') {
-      throw new ConflictError('Task is not pending review');
-    }
-
-    const updated = await prisma.task.update({
-      where: { id: parseInt(id) },
-      data: {
-        status: 'IN_PROGRESS',
-        auditedAt: new Date(),
-        auditedBy: guideId,
-        auditComment,
-        completedAt: null,
-        proofContent: null,
-      },
-    });
-
-    // 创建通知
-    await prisma.notification.create({
-      data: {
-        userId: task.growerId,
-        type: 'TASK',
-        title: '任务被拒绝',
-        content: `你的任务"${task.name}"未通过审核：${auditComment}`,
-        link: `/tasks/${id}`,
-      },
-    });
-
-    res.json({
-      message: 'Task rejected, please resubmit',
-      task: updated,
+      message: `Task ${approved ? 'approved' : 'rejected'}`,
+      task,
     });
   } catch (error) {
     next(error);
@@ -359,49 +143,18 @@ router.post('/:id/reject', authenticate, async (req: AuthRequest, res, next) => 
 router.get('/my', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user!.id;
-    const { status, type } = req.query;
+    
+    // 验证查询参数
+    const queryValidation = GetTasksQuerySchema.safeParse(req.query);
+    const { status, limit, offset } = queryValidation.success 
+      ? queryValidation.data 
+      : { limit: 50, offset: 0 };
 
-    const where: any = {
-      OR: [
-        { guideId: userId },
-        { growerId: userId },
-      ],
-    };
-
-    if (status) {
-      where.status = status;
-    }
-
-    const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        relationship: {
-          select: {
-            id: true,
-            mode: true,
-            status: true,
-          },
-        },
-        guide: {
-          select: { id: true, username: true, nickname: true, avatarUrl: true },
-        },
-        grower: {
-          select: { id: true, username: true, nickname: true, avatarUrl: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // 根据用户角色过滤视图
-    const isGuide = req.user!.role === 'GUIDE' || req.user!.role === 'ADMIN';
-    const filteredTasks = tasks.map(task => ({
-      ...task,
-      myRole: task.guideId === userId ? 'guide' : 'grower',
-    }));
+    const { tasks, total } = await taskService.getUserTasks(userId, status, limit, offset);
 
     res.json({
-      tasks: filteredTasks,
-      total: filteredTasks.length,
+      tasks,
+      total,
     });
   } catch (error) {
     next(error);
@@ -414,35 +167,10 @@ router.get('/my', authenticate, async (req: AuthRequest, res, next) => {
  */
 router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { id } = req.params;
+    const taskId = parseInt(req.params.id, 10);
     const userId = req.user!.id;
 
-    const task = await prisma.task.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        relationship: {
-          select: {
-            id: true,
-            mode: true,
-            status: true,
-          },
-        },
-        guide: {
-          select: { id: true, username: true, nickname: true, avatarUrl: true },
-        },
-        grower: {
-          select: { id: true, username: true, nickname: true, avatarUrl: true },
-        },
-      },
-    });
-
-    if (!task) {
-      throw new NotFoundError('Task not found');
-    }
-
-    if (task.guideId !== userId && task.growerId !== userId) {
-      throw new ForbiddenError('You are not part of this task');
-    }
+    const task = await taskService.getTaskById(taskId, userId);
 
     res.json({
       task: {
@@ -457,31 +185,18 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
 
 /**
  * DELETE /api/tasks/:id
- * 删除任务
+ * 取消任务
  */
 router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { id } = req.params;
-    const guideId = req.user!.id;
+    const taskId = parseInt(req.params.id, 10);
+    const userId = req.user!.id;
 
-    const task = await prisma.task.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!task) {
-      throw new NotFoundError('Task not found');
-    }
-
-    if (task.guideId !== guideId) {
-      throw new ForbiddenError('Only the guide can delete tasks');
-    }
-
-    await prisma.task.delete({
-      where: { id: parseInt(id) },
-    });
+    const task = await taskService.cancelTask(taskId, userId);
 
     res.json({
-      message: 'Task deleted successfully',
+      message: 'Task cancelled successfully',
+      task,
     });
   } catch (error) {
     next(error);

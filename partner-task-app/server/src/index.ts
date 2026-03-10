@@ -60,6 +60,17 @@ app.get('/health', (req, res) => {
   });
 });
 
+// API Health Check (PRD requirement)
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'partner-task-server',
+    version: '1.0.0',
+    database: 'connected',
+  });
+});
+
 // ==================== API Routes ====================
 
 // Root
@@ -89,6 +100,30 @@ app.use('/api/rewards', rewardRoutes);
 app.use('/api/cottage', cottageRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Import preference routes
+import preferenceRoutes from './routes/preferences';
+app.use('/api/users', preferenceRoutes);
+
+// Import achievement routes
+import achievementRoutes from './routes/achievements';
+app.use('/api/achievements', achievementRoutes);
+
+// Import random task routes
+import randomTaskRoutes from './routes/randomTasks';
+app.use('/api/tasks/random', randomTaskRoutes);
+
+// Import shop routes
+import shopRoutes from './routes/shop';
+app.use('/api/shop', shopRoutes);
+
+// Import certificate routes
+import certificateRoutes from './routes/certificates';
+app.use('/api/certificates', certificateRoutes);
+
+// Import calendar routes
+import calendarRoutes from './routes/calendar';
+app.use('/api/calendar', calendarRoutes);
 
 // ==================== Error Handling ====================
 

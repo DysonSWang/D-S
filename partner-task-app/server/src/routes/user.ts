@@ -1,11 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-/**
- * 用户管理 API
- */
 import { Router } from 'express';
+import { prisma } from '../db';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { NotFoundError, ForbiddenError } from '../middleware/errorHandler';
 

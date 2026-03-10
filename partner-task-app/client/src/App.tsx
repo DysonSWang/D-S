@@ -25,6 +25,12 @@ import Shop from './pages/cottage/Shop';
 import Rewards from './pages/grower/Rewards';
 import Collections from './pages/cottage/Collections';
 import Ranking from './pages/cottage/Ranking';
+import AchievementPage from './pages/AchievementPage';
+import PreferencesPage from './pages/PreferencesPage';
+import RandomChallengePage from './pages/RandomChallengePage';
+import RewardShopPage from './pages/RewardShopPage';
+import CertificatePage from './pages/CertificatePage';
+import TaskCalendarPage from './pages/TaskCalendarPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -89,6 +95,12 @@ function App() {
           <Route path="collections" element={<Collections />} />
           <Route path="shop" element={<Shop />} />
           <Route path="rewards" element={<Rewards />} />
+          <Route path="achievements" element={<AchievementPage />} />
+          <Route path="preferences" element={<PreferencesPage />} />
+          <Route path="random-challenge" element={<RandomChallengePage />} />
+          <Route path="shop" element={<RewardShopPage />} />
+          <Route path="certificate" element={<CertificatePage />} />
+          <Route path="calendar" element={<TaskCalendarPage />} />
         </Route>
 
         {/* Admin Routes */}
