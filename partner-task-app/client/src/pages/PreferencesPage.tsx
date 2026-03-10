@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Form, Input, Select, Slider, Switch, Button, Card, message, Divider, Tag } from 'antd';
+import { Form, Input, Select, Slider, Button, Card, message, Divider } from 'antd';
 import { SettingOutlined, SaveOutlined } from '@ant-design/icons';
 
 const { Option } = Select;

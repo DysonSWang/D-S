@@ -14,7 +14,6 @@ import {
   CalendarOutlined,
   UserOutlined,
   LogoutOutlined,
-  ShoppingCartOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
 
@@ -206,27 +205,16 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0 16px',
     background: '#fff',
     boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-    '@media (min-width: 768px)': {
-      padding: '0 24px',
-    },
   },
   headerLeft: {
     fontSize: 14,
     fontWeight: 500,
-    '@media (min-width: 768px)': {
-      fontSize: 16,
-    },
   },
   content: {
     margin: 12,
     padding: 12,
     background: '#fff',
     borderRadius: 8,
-    '@media (min-width: 768px)': {
-      margin: 24,
-      padding: 24,
-      borderRadius: 4,
-    },
   },
 };
 

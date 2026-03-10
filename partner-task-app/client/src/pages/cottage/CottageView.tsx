@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Progress, Button, message, Statistic, Space, Tag, Tabs, Empty, Badge } from 'antd';
+import { Card, Row, Col, Progress, Button, message, Statistic, Space, Tag, Tabs, Empty } from 'antd';
 import { HomeOutlined, RiseOutlined, GiftOutlined, TrophyOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import api from '@/api/request';
@@ -7,8 +7,7 @@ import api from '@/api/request';
 const CottageView = () => {
   const navigate = useNavigate();
   const [cottage, setCottage] = useState<any>(null);
-  const [decorations, setDecorations] = useState([]);
-  const [levelConfig, setLevelConfig] = useState<any>(null);
+  const [decorations, setDecorations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -191,8 +190,9 @@ const CottageView = () => {
               <p>温暖度：<span style={{ color: '#faad14', fontSize: 24 }}>{cottage.warmth}</span></p>
               <Progress
                 percent={expPercent}
-                title={`经验 ${cottage.experience}/${expNeeded}`}
                 status={cottage.experience >= expNeeded ? 'success' : 'active'}
+                strokeColor={{ '0%': '#1890ff', '100%': '#13C2C2' }}
+                format={() => `经验 ${cottage.experience}/${expNeeded}`}
               />
               {cottage.nextLevel && (
                 <div style={{ marginTop: 16, padding: 12, background: '#f0f5ff', borderRadius: 8 }}>

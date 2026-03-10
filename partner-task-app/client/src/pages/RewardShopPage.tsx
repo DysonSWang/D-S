@@ -5,8 +5,8 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Card, Row, Col, Button, Tag, message, Tabs, Badge, Avatar,
-  Modal, Descriptions, Static, Empty, Spin,
+  Card, Row, Col, Button, Tag, message, Tabs, Avatar,
+  Modal, Empty, Spin,
 } from 'antd';
 import {
   ShopOutlined, ShoppingCartOutlined, HistoryOutlined,

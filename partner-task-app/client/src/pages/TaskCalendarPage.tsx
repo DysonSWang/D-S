@@ -6,10 +6,9 @@
 import { useState, useEffect } from 'react';
 import {
   Card, Calendar, Badge, Tag, Row, Col, Statistic,
-  Select, Button, Modal, List, Empty, Tooltip,
+  Select, Button, Modal, List, Empty,
 } from 'antd';
 import {
-  CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   ThunderboltOutlined,
@@ -51,9 +50,8 @@ interface CalendarData {
 }
 
 const TaskCalendarPage = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState<any>(new Date());
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
-  const [loading, setLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [dayModal, setDayModal] = useState(false);
 
@@ -153,13 +151,12 @@ const TaskCalendarPage = () => {
       <div style={{ marginTop: 4 }}>
         <Badge
           count={day.completedCount}
-          total={day.tasks.length}
           style={{
             background: day.completedCount === day.tasks.length ? '#52c41a' : '#1890ff',
           }}
         />
         <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
-          {day.tasks.length} 个任务
+          {day.completedCount}/{day.tasks.length} 任务
         </div>
       </div>
     );
@@ -264,11 +261,11 @@ const TaskCalendarPage = () => {
           <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>图例说明</div>
           <div style={{ display: 'flex', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Badge count={5} total={5} style={{ background: '#52c41a' }} />
+              <Badge count={5} style={{ background: '#52c41a' }} />
               <span>全部完成</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Badge count={3} total={5} style={{ background: '#1890ff' }} />
+              <Badge count={3} style={{ background: '#1890ff' }} />
               <span>部分完成</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

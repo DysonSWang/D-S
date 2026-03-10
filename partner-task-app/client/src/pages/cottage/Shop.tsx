@@ -4,8 +4,8 @@ import { ShopOutlined } from '@ant-design/icons';
 import api from '@/api/request';
 
 const Shop = () => {
-  const [decorations, setDecorations] = useState([]);
-  const [reward, setReward] = useState(null);
+  const [decorations, setDecorations] = useState<any[]>([]);
+  const [reward, setReward] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

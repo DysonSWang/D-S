@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Card, Button, Tag, message, Spin, Result, Divider } from 'antd';
+import { Card, Button, Tag, message, Result, Divider } from 'antd';
 import { ThunderboltOutlined, CheckOutlined, CloseOutlined, ReloadOutlined } from '@ant-design/icons';
 
 interface RandomTask {

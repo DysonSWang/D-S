@@ -3,11 +3,10 @@ import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message } 
 import { SafetyOutlined, PlusOutlined } from '@ant-design/icons';
 import api from '@/api/request';
 
-const { TextArea } = Input;
 const { Option } = Select;
 
 const AdminContent = () => {
-  const [words, setWords] = useState([]);
+  const [words, setWords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();

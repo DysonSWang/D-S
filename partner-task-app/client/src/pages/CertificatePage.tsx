@@ -7,11 +7,8 @@ import { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Statistic, Avatar, Tag, message, Spin, Divider, Modal } from 'antd';
 import {
   TrophyOutlined,
-  CalendarOutlined,
   DownloadOutlined,
   ShareAltOutlined,
-  StarOutlined,
-  HeartOutlined,
 } from '@ant-design/icons';
 
 interface RelationshipData {

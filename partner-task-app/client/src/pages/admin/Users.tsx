@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Card, Table, Button, Space, Tag, Switch, Modal, message, Input } from 'antd';
-import { UserOutlined, PlusOutlined, SafetyOutlined } from '@ant-design/icons';
+import { UserOutlined, SafetyOutlined } from '@ant-design/icons';
 import api from '@/api/request';
 
 const { Search } = Input;
 
 const AdminUsers = () => {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
 

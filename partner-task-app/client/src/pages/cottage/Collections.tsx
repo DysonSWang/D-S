@@ -7,7 +7,6 @@ const Collections = () => {
   const [collections, setCollections] = useState<any[]>([]);
   const [selectedCollection, setSelectedCollection] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadCollections();

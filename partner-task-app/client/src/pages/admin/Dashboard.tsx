@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Card, Row, Col, Statistic, Table, Tag, Space } from 'antd';
 import {
   UserOutlined,
-  SafetyCertificateOutlined,
   BlockOutlined,
   TeamOutlined,
   CheckSquareOutlined,
@@ -10,8 +9,8 @@ import {
 import api from '@/api/request';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [recentRelationships, setRecentRelationships] = useState([]);
+  const [stats, setStats] = useState<any>(null);
+  const [recentRelationships, setRecentRelationships] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
