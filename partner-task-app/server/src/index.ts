@@ -109,6 +109,14 @@ app.use('/api/users', preferenceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Import admin stats routes (必须在 admin routes 之后注册)
+import adminStatsRoutes from './routes/admin-stats';
+app.use('/api/admin', adminStatsRoutes);
+
+// Import admin system routes
+import adminSystemRoutes from './routes/admin-system';
+app.use('/api/admin', adminSystemRoutes);
+
 // Import achievement routes
 import achievementRoutes from './routes/achievements';
 app.use('/api/achievements', achievementRoutes);
