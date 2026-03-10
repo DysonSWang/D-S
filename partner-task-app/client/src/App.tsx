@@ -70,13 +70,13 @@ function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/sso-login" element={<SSOLogin />} />
-          <Route path="/test-sso" element={<TestSSO />} />
           <Route path="/register" element={<Register />} />
         </Route>
         
         {/* Test Routes (no layout) */}
         <Route path="/simple-test" element={<SimpleTest />} />
         <Route path="/chakra-test" element={<ChakraTest />} />
+        <Route path="/test-sso" element={<TestSSO />} />
         <Route path="/direct-test" element={<SimpleTest />} />
 
         {/* Guide Routes */}

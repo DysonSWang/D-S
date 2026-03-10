@@ -2,13 +2,31 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ConfigProvider } from 'antd';
 import { ChakraProvider } from '@chakra-ui/react';
+import { extendTheme } from '@chakra-ui/react';
 import zhCN from 'antd/locale/zh_CN';
 import App from './App';
 import './index.css';
 
+// Chakra UI 主题配置
+const theme = extendTheme({
+  colors: {
+    brand: {
+      500: '#1677ff',
+      600: '#1557d9',
+    },
+  },
+  components: {
+    Button: {
+      defaultProps: {
+        colorScheme: 'brand',
+      },
+    },
+  },
+});
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ChakraProvider>
+    <ChakraProvider theme={theme}>
       <ConfigProvider
         locale={zhCN}
         theme={{
