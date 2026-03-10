@@ -31,7 +31,7 @@ const SimpleSSOLogin: React.FC = () => {
       setMessage('登录中...');
       setError('');
       
-      const response = await api.post('/sso/login', formData);
+      const response = await api.post('/api/sso/login', formData);
       const { token, user } = response.data;
       
       setMessage(`登录成功！角色：${user.role}`);
