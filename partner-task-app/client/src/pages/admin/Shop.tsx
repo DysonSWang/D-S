@@ -41,7 +41,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../../api/request';
+import api from '../../api/request';
 
 interface ShopItem {
   id: number;

@@ -27,7 +27,7 @@ import {
   TabPanel,
   Progress,
 } from '@chakra-ui/react';
-import { api } from '../../api/request';
+import api from '../../api/request';
 
 interface SalesStats {
   items: {

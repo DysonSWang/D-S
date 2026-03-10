@@ -29,7 +29,7 @@ import {
   Card,
 } from '@chakra-ui/react';
 import { ViewIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import { api } from '../../api/request';
+import api from '../../api/request';
 
 interface Task {
   id: number;

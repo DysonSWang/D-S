@@ -14,7 +14,7 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { api } from '@/api/request';
+import api from '@/api/request';
 
 const SSOLogin: React.FC = () => {
   const navigate = useNavigate();

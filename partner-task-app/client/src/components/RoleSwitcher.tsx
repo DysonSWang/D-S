@@ -12,7 +12,7 @@ import {
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { api } from '@/api/request';
+import api from '@/api/request';
 
 interface RoleSwitcherProps {
   currentRole: string;

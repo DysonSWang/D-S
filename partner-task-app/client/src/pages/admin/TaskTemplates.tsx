@@ -31,7 +31,7 @@ import {
   Switch,
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
-import { api } from '../../api/request';
+import api from '../../api/request';
 
 interface TaskTemplate {
   id: number;
