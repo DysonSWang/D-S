@@ -92,22 +92,22 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Import random task routes (必须在 task routes 之前注册)
+import randomTaskRoutes from './routes/randomTasks';
+app.use('/api/tasks/random', randomTaskRoutes);
+
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/relationships', relationshipRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/rewards', rewardRoutes);
 app.use('/api/cottage', cottageRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Import preference routes
+// Import preference routes (必须在 user routes 之前注册)
 import preferenceRoutes from './routes/preferences';
 app.use('/api/users', preferenceRoutes);
 
-// Import random task routes (必须在 task routes 之前注册)
-import randomTaskRoutes from './routes/randomTasks';
-app.use('/api/tasks/random', randomTaskRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Import achievement routes
 import achievementRoutes from './routes/achievements';
@@ -124,6 +124,10 @@ app.use('/api/certificates', certificateRoutes);
 // Import calendar routes
 import calendarRoutes from './routes/calendar';
 app.use('/api/calendar', calendarRoutes);
+
+// Import debug routes (for testing)
+import debugRoutes from './routes/debug-test';
+app.use('/api/debug', debugRoutes);
 
 // ==================== Error Handling ====================
 

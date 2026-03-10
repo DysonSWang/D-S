@@ -47,10 +47,15 @@ router.get('/preferences', authenticate, async (req: AuthRequest, res, next) => 
       },
     });
   } catch (error: any) {
-    console.error('偏好设置 API 错误:', error);
+    console.error('====== 偏好设置 API 错误 ======');
+    console.error('Error:', error);
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('===============================');
     res.status(500).json({ 
       error: 'INTERNAL_ERROR',
       message: error.message || '服务器内部错误',
+      details: error.toString(),
     });
   }
 });
