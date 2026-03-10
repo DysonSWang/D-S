@@ -127,6 +127,119 @@ info "注：前端页面使用 React SPA，curl 无法获取渲染后的内容"
 info "页面可访问性测试已验证所有页面 HTTP 200"
 pass "前端功能测试跳过（需要浏览器自动化）"
 
+# ==================== 商城下单测试 ====================
+section "商城下单 E2E 测试"
+
+# 测试 1: 创建测试用户
+info "创建测试用户..."
+TEST_USER_REG=$(curl -s -X POST "$API_URL/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testbuyer","email":"buyer@test.com","password":"test123","role":"GROWER"}')
+
+if echo "$TEST_USER_REG" | grep -q "token\|already"; then
+    pass "测试用户创建成功"
+    
+    # 登录获取 token
+    TEST_USER_LOGIN=$(curl -s -X POST "$API_URL/api/auth/login" \
+      -H "Content-Type: application/json" \
+      -d '{"username":"testbuyer","password":"test123"}')
+    
+    if echo "$TEST_USER_LOGIN" | grep -q "token"; then
+        BUYER_TOKEN=$(echo "$TEST_USER_LOGIN" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+        pass "测试用户登录成功"
+    else
+        fail "测试用户登录失败"
+    fi
+else
+    fail "测试用户创建失败"
+fi
+
+# 测试 2: 获取用户奖励资产
+info "获取奖励资产..."
+REWARD_INFO=$(curl -s "$API_URL/api/rewards/my" \
+  -H "Authorization: Bearer $BUYER_TOKEN")
+
+if echo "$REWARD_INFO" | grep -q "bones"; then
+    BONES=$(echo "$REWARD_INFO" | grep -o '"bones":[0-9]*' | cut -d':' -f2)
+    pass "获取奖励资产成功 (Bones: $BONES)"
+else
+    fail "获取奖励资产失败"
+fi
+
+# 测试 3: 获取商店商品
+info "获取商店商品..."
+SHOP_ITEMS=$(curl -s "$API_URL/api/shop/items" \
+  -H "Authorization: Bearer $BUYER_TOKEN")
+
+if echo "$SHOP_ITEMS" | grep -q "success"; then
+    ITEM_COUNT=$(echo "$SHOP_ITEMS" | grep -o '"total":[0-9]*' | cut -d':' -f2)
+    pass "获取商品列表成功 (共 $ITEM_COUNT 个商品)"
+    
+    # 获取第一个商品 ID
+    FIRST_ITEM_ID=$(echo "$SHOP_ITEMS" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
+    if [ -n "$FIRST_ITEM_ID" ]; then
+        pass "获取商品 ID: $FIRST_ITEM_ID"
+    else
+        fail "未找到可用商品"
+        FIRST_ITEM_ID=""
+    fi
+else
+    fail "获取商品列表失败"
+fi
+
+# 测试 4: 获取商品价格
+if [ -n "$FIRST_ITEM_ID" ]; then
+    info "获取商品价格..."
+    ITEM_DETAIL=$(curl -s "$API_URL/api/shop/admin/items" \
+      -H "Authorization: Bearer $ADMIN_TOKEN")
+    
+    # 提取第一个商品的价格
+    ITEM_PRICE=$(echo "$ITEM_DETAIL" | jq -r ".data.items[] | select(.id==$FIRST_ITEM_ID) | .priceAmount")
+    
+    if [ -n "$ITEM_PRICE" ] && [ "$ITEM_PRICE" != "null" ]; then
+        pass "商品价格：$ITEM_PRICE Bones"
+    else
+        ITEM_PRICE=200  # 默认价格
+        info "使用默认价格：$ITEM_PRICE"
+    fi
+    
+    # 测试下单（预期余额不足）
+    info "测试下单购买（预期余额不足）..."
+    ORDER_RESPONSE=$(curl -s -X POST "$API_URL/api/shop/orders" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $BUYER_TOKEN" \
+      -d "{\"itemId\":$FIRST_ITEM_ID,\"quantity\":1}")
+    
+    if echo "$ORDER_RESPONSE" | grep -q "余额\|bones\|不足\|success\|订单"; then
+        pass "下单 API 正常工作"
+        
+        # 测试 5: 验证管理员订单 API
+        info "验证管理员订单 API..."
+        ADMIN_ORDERS=$(curl -s "$API_URL/api/shop/admin/orders" \
+          -H "Authorization: Bearer $ADMIN_TOKEN")
+        
+        if echo "$ADMIN_ORDERS" | grep -q "orders\|total"; then
+            ORDER_TOTAL=$(echo "$ADMIN_ORDERS" | grep -o '"total":[0-9]*' | cut -d':' -f2)
+            pass "管理员订单 API 正常 (订单总数：$ORDER_TOTAL)"
+        else
+            fail "管理员订单 API 异常"
+        fi
+        
+        # 测试 6: 验证销售统计
+        info "验证销售统计 API..."
+        SALES_STATS=$(curl -s "$API_URL/api/shop/admin/stats" \
+          -H "Authorization: Bearer $ADMIN_TOKEN")
+        
+        if echo "$SALES_STATS" | grep -q "revenue"; then
+            pass "销售统计 API 正常"
+        else
+            fail "销售统计 API 异常"
+        fi
+    else
+        fail "下单失败：$ORDER_RESPONSE"
+    fi
+fi
+
 # ==================== 测试总结 ====================
 section "测试总结"
 

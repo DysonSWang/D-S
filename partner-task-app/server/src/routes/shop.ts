@@ -41,10 +41,16 @@ router.get('/items', authenticate, async (req, res) => {
       orderBy: [{ sort: 'asc' }, { createdAt: 'desc' }],
     });
 
+    // 转换字段名以匹配前端期望
+    const formattedItems = items.map(item => ({
+      ...item,
+      priceAmount: item.price,
+    }));
+
     res.json({
       success: true,
       data: {
-        items,
+        items: formattedItems,
         total: items.length,
       },
     });
@@ -327,6 +333,12 @@ router.get('/admin/items', authenticate, authorize('ADMIN'), async (req: AuthReq
       prisma.shopItem.count({ where }),
     ]);
 
+    // 转换字段名
+    const formattedItems = items.map(item => ({
+      ...item,
+      priceAmount: item.price,
+    }));
+
     // 分类统计
     const categoryStats = await prisma.shopItem.groupBy({
       by: ['category'],
@@ -336,7 +348,7 @@ router.get('/admin/items', authenticate, authorize('ADMIN'), async (req: AuthReq
     res.json({
       success: true,
       data: {
-        items,
+        items: formattedItems,
         total,
         stats: {
           byCategory: categoryStats,
@@ -497,7 +509,7 @@ router.get('/admin/orders', authenticate, authorize('ADMIN'), async (req: AuthRe
               name: true,
               category: true,
               priceType: true,
-              priceAmount: true,
+              price: true,
             },
           },
         },
@@ -514,12 +526,6 @@ router.get('/admin/orders', authenticate, authorize('ADMIN'), async (req: AuthRe
       _count: true,
     });
 
-    // 分类统计
-    const categoryStats = await prisma.shopOrder.groupBy({
-      by: ['category'],
-      _count: true,
-    });
-
     res.json({
       success: true,
       data: {
@@ -527,7 +533,6 @@ router.get('/admin/orders', authenticate, authorize('ADMIN'), async (req: AuthRe
         total,
         stats: {
           byStatus: statusStats,
-          byCategory: categoryStats,
         },
       },
     });
