@@ -1,11 +1,11 @@
 /**
  * 奖励商店 API
- * 功能：商品列表、兑换、订单历史
+ * 功能：商品列表、兑换、订单历史、管理员商城管理
  */
 
 import { Router } from 'express';
 import { prisma } from '../db';
-import { authenticate } from '../middleware/auth';
+import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -296,6 +296,285 @@ router.get('/orders/:id', authenticate, async (req, res) => {
   } catch (error) {
     console.error('获取订单详情失败:', error);
     res.status(500).json({ error: '服务器内部错误' });
+  }
+});
+
+// ==================== 管理员商城管理 ====================
+
+/**
+ * GET /api/shop/admin/items
+ * 管理员 - 获取所有商品（包括未上架）
+ */
+router.get('/admin/items', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    const { category, isActive, limit = 100, offset = 0 } = req.query;
+
+    const where: any = {};
+    if (category) {
+      where.category = category as string;
+    }
+    if (isActive !== undefined) {
+      where.isActive = isActive === 'true';
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.shopItem.findMany({
+        where,
+        orderBy: [{ sort: 'asc' }, { createdAt: 'desc' }],
+        take: parseInt(limit as string),
+        skip: parseInt(offset as string),
+      }),
+      prisma.shopItem.count({ where }),
+    ]);
+
+    // 分类统计
+    const categoryStats = await prisma.shopItem.groupBy({
+      by: ['category'],
+      _count: true,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        items,
+        total,
+        stats: {
+          byCategory: categoryStats,
+        },
+      },
+    });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/shop/admin/items
+ * 管理员 - 创建商品
+ */
+router.post('/admin/items', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    const {
+      name,
+      description,
+      category,
+      priceType,
+      priceAmount,
+      rewardType,
+      rewardAmount,
+      imageUrl,
+      stock,
+      isActive,
+      startDate,
+      endDate,
+      sort,
+    } = req.body;
+
+    // 验证必填字段
+    if (!name || !category || !priceType || !priceAmount) {
+      return res.status(400).json({ error: '缺少必填字段' });
+    }
+
+    const item = await prisma.shopItem.create({
+      data: {
+        name,
+        description: description || '',
+        category,
+        priceType,
+        priceAmount: parseInt(priceAmount),
+        rewardType: rewardType || null,
+        rewardAmount: rewardAmount ? parseInt(rewardAmount) : null,
+        imageUrl: imageUrl || null,
+        stock: stock ? parseInt(stock) : null,
+        isActive: isActive !== false, // 默认上架
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        sort: sort ? parseInt(sort) : 0,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: '商品创建成功',
+      data: item,
+    });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/shop/admin/items/:id
+ * 管理员 - 更新商品
+ */
+router.put('/admin/items/:id', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData: any = {};
+
+    const allowedFields = [
+      'name', 'description', 'category', 'priceType', 'priceAmount',
+      'rewardType', 'rewardAmount', 'imageUrl', 'stock', 'isActive',
+      'startDate', 'endDate', 'sort',
+    ];
+
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        if (field.includes('Date')) {
+          updateData[field] = req.body[field] ? new Date(req.body[field]) : null;
+        } else if (field.includes('Amount') || field === 'stock' || field === 'sort') {
+          updateData[field] = req.body[field] ? parseInt(req.body[field]) : null;
+        } else {
+          updateData[field] = req.body[field];
+        }
+      }
+    });
+
+    const item = await prisma.shopItem.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+    });
+
+    res.json({
+      success: true,
+      message: '商品更新成功',
+      data: item,
+    });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/shop/admin/items/:id
+ * 管理员 - 删除商品
+ */
+router.delete('/admin/items/:id', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.shopItem.delete({
+      where: { id: parseInt(id) },
+    });
+
+    res.json({
+      success: true,
+      message: '商品删除成功',
+    });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/shop/admin/orders
+ * 管理员 - 获取所有订单
+ */
+router.get('/admin/orders', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    const { status, category, limit = 50, offset = 0 } = req.query;
+
+    const where: any = {};
+    if (status) {
+      where.status = status as string;
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.shopOrder.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              nickname: true,
+              role: true,
+            },
+          },
+          item: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+              priceType: true,
+              priceAmount: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: parseInt(limit as string),
+        skip: parseInt(offset as string),
+      }),
+      prisma.shopOrder.count({ where }),
+    ]);
+
+    // 状态统计
+    const statusStats = await prisma.shopOrder.groupBy({
+      by: ['status'],
+      _count: true,
+    });
+
+    // 分类统计
+    const categoryStats = await prisma.shopOrder.groupBy({
+      by: ['category'],
+      _count: true,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        orders,
+        total,
+        stats: {
+          byStatus: statusStats,
+          byCategory: categoryStats,
+        },
+      },
+    });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/shop/admin/stats
+ * 管理员 - 商城统计
+ */
+router.get('/admin/stats', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    // 商品统计
+    const itemStats = await prisma.shopItem.groupBy({
+      by: ['category'],
+      _count: true,
+    });
+
+    const activeItems = await prisma.shopItem.count({ where: { isActive: true } });
+    const totalItems = await prisma.shopItem.count();
+
+    // 订单统计
+    const orderStats = await prisma.shopOrder.groupBy({
+      by: ['status'],
+      _count: true,
+    }).catch(() => []);
+
+    const totalOrders = await prisma.shopOrder.count();
+
+    res.json({
+      success: true,
+      data: {
+        items: {
+          total: totalItems,
+          active: activeItems,
+          byCategory: itemStats,
+        },
+        orders: {
+          total: totalOrders,
+          byStatus: orderStats || [],
+        },
+      },
+    });
+  } catch (error: any) {
+    next(error);
   }
 });
 
