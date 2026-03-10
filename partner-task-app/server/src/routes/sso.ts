@@ -43,8 +43,10 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: '用户名或密码错误' });
     }
 
-    // 验证密码（简单比较，生产环境应该用 bcrypt）
-    if (user.password !== password) {
+    // 验证密码（使用 bcrypt 比较）
+    const bcrypt = require('bcryptjs');
+    const validPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!validPassword) {
       return res.status(401).json({ error: '用户名或密码错误' });
     }
 
