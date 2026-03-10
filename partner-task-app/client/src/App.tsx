@@ -36,6 +36,7 @@ import TaskCalendarPage from './pages/TaskCalendarPage';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
 import AdminContent from './pages/admin/Content';
+import AdminShop from './pages/admin/Shop';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) => {
@@ -116,6 +117,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="content" element={<AdminContent />} />
+          <Route path="shop" element={<AdminShop />} />
         </Route>
 
         {/* Root Redirect */}
