@@ -97,6 +97,10 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
 router.get('/:id', authenticate, authorize('ADMIN'), async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ error: '用户 ID 不能为空' });
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: parseInt(id) },
