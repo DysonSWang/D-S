@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React 独立测试</title>
+</head>
+<body>
+    <div id="root"></div>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        function App() {
+            return (
+                <div style={{ padding: '40px', fontFamily: 'Arial' }}>
+                    <h1 style={{ color: 'blue' }}>✅ React CDN 测试成功！</h1>
+                    <p style={{ fontSize: '18px' }}>
+                        如果看到这个页面，说明浏览器可以正常执行 React
+                    </p>
+                    <p style={{ color: 'green' }}>
+                        问题在项目代码，不在浏览器
+                    </p>
+                    <div style={{ marginTop: '20px', padding: '15px', background: '#f0f0f0', borderRadius: '8px' }}>
+                        <strong>下一步:</strong>
+                        <ul>
+                            <li>按 F12 查看 Console 错误</li>
+                            <li>截图发给我分析</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        }
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
