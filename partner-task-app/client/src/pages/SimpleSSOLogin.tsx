@@ -34,16 +34,26 @@ const SimpleSSOLogin: React.FC = () => {
       const response = await api.post('/api/sso/login', formData);
       const { token, user } = response.data;
       
-      setMessage(`登录成功！角色：${user.role}`);
+      const role = user.role || user.currentRole;
       
-      // 简单跳转
-      if (user.role === 'ADMIN') {
-        navigate('/admin/dashboard');
-      } else if (user.role === 'GUIDE') {
-        navigate('/guide/dashboard');
-      } else {
-        navigate('/grower/dashboard');
-      }
+      // 保存 token 到 localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('userRole', role);
+      
+      setMessage(`登录成功！角色：${role}，正在跳转...`);
+      
+      // 延迟跳转，让用户看到成功消息
+      setTimeout(() => {
+        if (role === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else if (role === 'GUIDE') {
+          navigate('/guide/dashboard');
+        } else if (role === 'GROWER') {
+          navigate('/grower/dashboard');
+        } else {
+          setError(`未知角色：${role}`);
+        }
+      }, 1000);
     } catch (err: any) {
       setError(err.response?.data?.error || '登录失败');
       setMessage('');
