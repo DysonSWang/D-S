@@ -44,6 +44,7 @@ import AdminTaskTemplates from './pages/admin/TaskTemplates';
 // SSO
 import SSOLogin from './pages/SSOLogin';
 import TestSSO from './pages/TestSSO';
+import SimpleTest from './pages/SimpleTest';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) => {
@@ -67,6 +68,7 @@ function App() {
         {/* Public Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
+          <Route path="/simple-test" element={<SimpleTest />} />
           <Route path="/sso-login" element={<SSOLogin />} />
           <Route path="/test-sso" element={<TestSSO />} />
           <Route path="/register" element={<Register />} />
