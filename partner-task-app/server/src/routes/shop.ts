@@ -491,34 +491,37 @@ router.get('/admin/orders', authenticate, authorize('ADMIN'), async (req: AuthRe
       where.status = status as string;
     }
 
-    const [orders, total] = await Promise.all([
-      prisma.shopOrder.findMany({
-        where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              nickname: true,
-              role: true,
-            },
-          },
-          item: {
-            select: {
-              id: true,
-              name: true,
-              category: true,
-              priceType: true,
-              price: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: parseInt(limit as string),
-        skip: parseInt(offset as string),
-      }),
-      prisma.shopOrder.count({ where }),
-    ]);
+    const orders = await prisma.shopOrder.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: parseInt(limit as string),
+      skip: parseInt(offset as string),
+    });
+
+    // 手动获取用户和商品信息
+    const userIds = [...new Set(orders.map(o => o.userId))];
+    const itemIds = [...new Set(orders.map(o => o.itemId))];
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true, nickname: true, role: true },
+    });
+
+    const items = await prisma.shopItem.findMany({
+      where: { id: { in: itemIds } },
+      select: { id: true, name: true, category: true, priceType: true, price: true },
+    });
+
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const itemMap = Object.fromEntries(items.map(i => [i.id, i]));
+
+    const formattedOrders = orders.map(o => ({
+      ...o,
+      user: userMap[o.userId] || null,
+      item: itemMap[o.itemId] || null,
+    }));
+
+    const total = await prisma.shopOrder.count({ where });
 
     // 状态统计
     const statusStats = await prisma.shopOrder.groupBy({
@@ -529,7 +532,7 @@ router.get('/admin/orders', authenticate, authorize('ADMIN'), async (req: AuthRe
     res.json({
       success: true,
       data: {
-        orders,
+        orders: formattedOrders,
         total,
         stats: {
           byStatus: statusStats,
