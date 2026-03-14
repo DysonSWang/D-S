@@ -49,6 +49,7 @@ model User {
   messageSender        Message[]      @relation("MessageSender")
   messageReceiver      Message[]      @relation("MessageReceiver")
   collectionProgress   UserCollectionProgress[]
+  taskChangeLogs       TaskChangeLog[]
 
   @@index([username])
   @@index([email])
@@ -72,16 +73,51 @@ model Relationship {
   guideSign           String?
   growerSign          String?
   coolingOffDeadline  DateTime?
+  certificateUrl      String?
   createdAt           DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   // 关系中的任务
   tasks               Task[]
+  // 签约记录
+  signingRecord       SigningRecord?
 
   @@unique([guideId, growerId])
   @@index([guideId])
   @@index([growerId])
   @@index([status])
+}
+
+// ==================== 签约仪式 ====================
+
+/// 签约记录表
+model SigningRecord {
+  id              Int      @id @default(autoincrement())
+  relationshipId  Int      @unique
+  relationship    Relationship @relation(fields: [relationshipId], references: [id])
+  agreementContent String   // 协议内容
+  guideSignature  String?  // 引导者签名 (base64)
+  growerSignature String?  // 成长者签名 (base64)
+  oathCompleted   Boolean  @default(false)
+  certificateUrl  String?
+  signedAt        DateTime @default(now())
+  
+  @@index([relationshipId])
+}
+
+/// 签约日记表
+model SigningDiary {
+  id              Int      @id @default(autoincrement())
+  relationshipId  Int
+  userId          Int
+  mood            String   // excited/nervous/happy/touched
+  thought         String?  // 想法
+  expectation     String?  // 期待
+  photoUrl        String?
+  createdAt       DateTime @default(now())
+  
+  @@index([relationshipId])
+  @@index([userId])
 }
 
 // ==================== 任务系统 ====================
@@ -100,17 +136,22 @@ model Task {
   name            String
   description     String?
   difficulty      Int      @default(1) // 1-5
-  status          String   @default("PENDING") // PENDING/IN_PROGRESS/PENDING_REVIEW/COMPLETED/FAILED/ARCHIVED
-  proofType       String   @default("TEXT") // TEXT/IMAGE/VIDEO/NONE
-  proofContent    String?
+  status          String   @default("PENDING") // PENDING/IN_PROGRESS/PENDING_REVIEW/COMPLETED/REJECTED/CANCELLED/ARCHIVED
+  proofType       String   @default("TEXT") // TEXT/IMAGE/VIDEO/BOTH/ALL/NONE
+  proofContent    String?  // 文字证明
+  proofImages     String?  // JSON 数组：图片 URL 列表
+  proofVideos     String?  // JSON 数组：视频 URL 列表
   rewardConfig    String?  // JSON
   suggestionConfig String?
   deadline        DateTime?
   startedAt       DateTime?
+  submittedAt     DateTime?
   completedAt     DateTime?
-  auditedAt       DateTime?
-  auditedBy       Int?
-  auditComment    String?
+  reviewedAt      DateTime?
+  feedback        String?
+  isArchived      Boolean  @default(false)
+  archivedAt      DateTime?
+  archivedBy      Int?
   repeatType      String   @default("NONE") // NONE/DAILY/WEEKLY/MONTHLY/CUSTOM
   repeatConfig    String?  // JSON
   createdAt       DateTime @default(now())
@@ -118,8 +159,8 @@ model Task {
 
   @@index([guideId])
   @@index([growerId])
-  @@index([status])
   @@index([relationshipId])
+  @@index([status])
 }
 
 // ==================== 任务模板 ====================
@@ -172,6 +213,7 @@ model RewardTransaction {
   balance   Int      // 交易后余额
   reason    String?
   taskId    Int?
+  metadata  String?
   createdAt DateTime @default(now())
 
   @@index([rewardId])
@@ -330,6 +372,25 @@ model UserCollectionProgress {
   @@index([isCompleted])
 }
 
+// ==================== 任务变更日志 ====================
+
+/// 任务变更日志表
+model TaskChangeLog {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  field     String   // 变更字段：status/name/description/rewardConfig 等
+  oldValue  String?  // 原值 (JSON 字符串)
+  newValue  String?  // 新值 (JSON 字符串)
+  changedBy Int      // 操作人 ID
+  changer   User?    @relation(fields: [changedBy], references: [id])
+  reason    String?  // 变更原因
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@index([changedBy])
+  @@index([createdAt])
+}
+
 // ==================== 成就系统 ====================
 
 /// 成就表
@@ -419,4 +480,50 @@ model SensitiveWord {
   createdAt DateTime @default(now())
 
   @@index([category])
+}
+
+// ==================== 小屋扩展系统 ====================
+
+/// 每日任务进度表
+model DailyTaskProgress {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  date         String   // YYYY-MM-DD
+  progressData String   @default("{}") // JSON: { taskId: progress }
+  claimedTasks String   @default("[]") // JSON: [taskId1, taskId2]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+/// 小屋访客记录表
+model CottageVisit {
+  id         Int      @id @default(autoincrement())
+  cottageId  Int
+  visitorId  Int
+  message    String?
+  gift       String?  // JSON: { type, amount }
+  liked      Boolean  @default(false)
+  visitTime  DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([cottageId])
+  @@index([visitorId])
+  @@index([visitTime])
+}
+
+/// 装饰合成记录表
+model SynthesisRecord {
+  id                   Int      @id @default(autoincrement())
+  userId               Int
+  recipeId             String
+  success              Boolean
+  obtainedDecorationId Int?
+  consumedDecorationIds String @default("[]") // JSON: [id1, id2, id3]
+  createdAt            DateTime @default(now())
+
+  @@index([userId])
 }
